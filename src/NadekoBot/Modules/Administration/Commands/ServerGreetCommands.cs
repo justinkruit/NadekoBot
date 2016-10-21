@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
@@ -14,20 +15,19 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class ServerGreetCommands
+        public class ServerGreetCommands : ModuleBase
         {
-            public static long Greeted = 0;
-            private Logger _log;
+            public static ulong Greeted { get; set; } = 0;
+            private static Logger _log;
 
-            public ServerGreetCommands()
+            static ServerGreetCommands()
             {
                 NadekoBot.Client.UserJoined += UserJoined;
                 NadekoBot.Client.UserLeft += UserLeft;
                 _log = LogManager.GetCurrentClassLogger();
             }
 
-            private Task UserLeft(IGuildUser user)
+            private static Task UserLeft(IGuildUser user)
             {
                 var leftTask = Task.Run(async () =>
                 {
@@ -67,7 +67,7 @@ namespace NadekoBot.Modules.Administration
                 return Task.CompletedTask;
             }
 
-            private Task UserJoined(IGuildUser user)
+            private static Task UserJoined(IGuildUser user)
             {
                 var joinedTask = Task.Run(async () =>
                 {
@@ -126,9 +126,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task GreetDel(IUserMessage umsg)
+            public async Task GreetDel()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -148,9 +148,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task Greet(IUserMessage umsg)
+            public async Task Greet()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -171,9 +171,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task GreetMsg(IUserMessage umsg, [Remainder] string text = null)
+            public async Task GreetMsg([Remainder] string text = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -200,9 +200,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task GreetDm(IUserMessage umsg)
+            public async Task GreetDm()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -222,9 +222,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task GreetDmMsg(IUserMessage umsg, [Remainder] string text = null)
+            public async Task GreetDmMsg([Remainder] string text = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -251,9 +251,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task Bye(IUserMessage umsg)
+            public async Task Bye()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -274,9 +274,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task ByeMsg(IUserMessage umsg, [Remainder] string text = null)
+            public async Task ByeMsg([Remainder] string text = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())
@@ -303,9 +303,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task ByeDel(IUserMessage umsg)
+            public async Task ByeDel()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())

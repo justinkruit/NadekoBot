@@ -1,5 +1,6 @@
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using ImageProcessorCore;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
@@ -13,24 +14,25 @@ namespace NadekoBot.Modules.Gambling
     public partial class Gambling
     {
         [Group]
-        public class FlipCoinCommands
+        public class FlipCoinCommands : ModuleBase
         {
-            NadekoRandom rng { get; } = new NadekoRandom();
+            static NadekoRandom rng { get; } = new NadekoRandom();
             private const string headsPath = "data/images/coins/heads.png";
             private const string tailsPath = "data/images/coins/tails.png";
             public FlipCoinCommands() { }
             
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Flip(IUserMessage imsg, int count = 1)
+            public async Task Flip(int count = 1)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 if (count == 1)
                 {
                     if (rng.Next(0, 2) == 1)
-                        await channel.SendFileAsync(headsPath, $"{imsg.Author.Mention} rolled " + Format.Code("Heads") + ".").ConfigureAwait(false);
+                        await channel.SendFileAsync(headsPath, $"{Context.User.Mention} rolled " + Format.Code("Heads") + ".").ConfigureAwait(false);
                     else
-                        await channel.SendFileAsync(tailsPath, $"{imsg.Author.Mention} rolled " + Format.Code("Tails") + ".").ConfigureAwait(false);
+                        await channel.SendFileAsync(tailsPath, $"{Context.User.Mention} rolled " + Format.Code("Tails") + ".").ConfigureAwait(false);
                     return;
                 }
                 if (count > 10 || count < 1)
@@ -45,15 +47,15 @@ namespace NadekoBot.Modules.Gambling
                                 new Image(File.OpenRead(headsPath)) :
                                 new Image(File.OpenRead(tailsPath));
                 }
-                await channel.SendFileAsync(imgs.Merge().ToStream(), $"{count} coins.png").ConfigureAwait(false);
+                await channel.SendFileAsync(imgs.Merge().ToStream(), $"{count} coins.png","").ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Betflip(IUserMessage umsg, int amount, string guess)
+            public async Task Betflip(int amount, string guess)
             {
-                var channel = (ITextChannel)umsg.Channel;
-                var guildUser = (IGuildUser)umsg.Author;
+                var channel = (SocketTextChannel)Context.Channel;
+                var guildUser = (IGuildUser)Context.User;
                 var guessStr = guess.Trim().ToUpperInvariant();
                 if (guessStr != "H" && guessStr != "T" && guessStr != "HEADS" && guessStr != "TAILS")
                     return;
@@ -64,12 +66,12 @@ namespace NadekoBot.Modules.Gambling
                 long userFlowers;
                 using (var uow = DbHandler.UnitOfWork())
                 {
-                    userFlowers = uow.Currency.GetOrCreate(umsg.Author.Id).Amount;
+                    userFlowers = uow.Currency.GetOrCreate(Context.User.Id).Amount;
                 }
 
                 if (userFlowers < amount)
                 {
-                    await channel.SendMessageAsync($"{umsg.Author.Mention} You don't have enough {Gambling.CurrencyPluralName}. You only have {userFlowers}{Gambling.CurrencySign}.").ConfigureAwait(false);
+                    await channel.SendMessageAsync($"{Context.User.Mention} You don't have enough {Gambling.CurrencyPluralName}. You only have {userFlowers}{Gambling.CurrencySign}.").ConfigureAwait(false);
                     return;
                 }
 
@@ -94,12 +96,12 @@ namespace NadekoBot.Modules.Gambling
                 if (isHeads == result)
                 { 
                     var toWin = (int)Math.Round(amount * 1.8);
-                    str = $"{umsg.Author.Mention}`You guessed it!` You won {toWin}{Gambling.CurrencySign}";
-                    await CurrencyHandler.AddCurrencyAsync((IGuildUser)umsg.Author, "Betflip Gamble", toWin, false).ConfigureAwait(false);
+                    str = $"{Context.User.Mention}`You guessed it!` You won {toWin}{Gambling.CurrencySign}";
+                    await CurrencyHandler.AddCurrencyAsync((IGuildUser)Context.Message.Author, "Betflip Gamble", toWin, false).ConfigureAwait(false);
                 }
                 else
                 {
-                    str = $"{umsg.Author.Mention}`Better luck next time.`";
+                    str = $"{Context.User.Mention}`Better luck next time.`";
                 }
 
                 await channel.SendFileAsync(imgPathToSend, str).ConfigureAwait(false);

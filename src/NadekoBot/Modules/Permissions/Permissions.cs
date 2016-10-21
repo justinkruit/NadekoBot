@@ -26,7 +26,7 @@ namespace NadekoBot.Modules.Permissions
         }
 
         //guildid, root permission
-        public static ConcurrentDictionary<ulong, PermissionCache> Cache;
+        public static ConcurrentDictionary<ulong, PermissionCache> Cache { get; }
 
         static Permissions()
         {
@@ -44,15 +44,15 @@ namespace NadekoBot.Modules.Permissions
             }
         }
 
-        public Permissions(ILocalization loc, CommandService cmds, ShardedDiscordClient client) : base(loc, cmds, client)
+        public Permissions() : base()
         {
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Verbose(IUserMessage msg, PermissionAction action)
+        public async Task Verbose(PermissionAction action)
         {
-            var channel = (ITextChannel)msg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -72,9 +72,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task PermRole(IUserMessage msg, [Remainder] IRole role = null)
+        public async Task PermRole([Remainder] IRole role = null)
         {
-            var channel = (ITextChannel)msg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
             using (var uow = DbHandler.UnitOfWork())
             {
                 var config = uow.GuildConfigs.For(channel.Guild.Id);
@@ -100,9 +100,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ListPerms(IUserMessage msg, int page = 1)
+        public async Task ListPerms(int page = 1)
         {
-            var channel = (ITextChannel)msg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             if (page < 1 || page > 4)
                 return;
@@ -111,7 +111,7 @@ namespace NadekoBot.Modules.Permissions
             {
                 var perms = uow.GuildConfigs.PermissionsFor(channel.Guild.Id).RootPermission;
                 var i = 1;
-                toSend = Format.Code($"Permissions page {page}") + "\n\n" + String.Join("\n", perms.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"`{(i++)}.` {(p.Next == null ? Format.Bold(p.GetCommand(channel.Guild) + " [uneditable]") : (p.GetCommand(channel.Guild)))}"));
+                toSend = Format.Code($"Permissions page {page}") + "\n\n" + String.Join("\n", perms.AsEnumerable().Skip((page - 1) * 20).Take(20).Select(p => $"`{(i++)}.` {(p.Next == null ? Format.Bold(p.GetCommand(channel.Guild) + " [uneditable]") : p.GetCommand(channel.Guild))}"));
             }
 
             if (string.IsNullOrWhiteSpace(toSend))
@@ -122,9 +122,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task RemovePerm(IUserMessage imsg, int index)
+        public async Task RemovePerm(int index)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
             index -= 1;
             try
             {
@@ -161,7 +161,7 @@ namespace NadekoBot.Modules.Permissions
                     uow2._context.SaveChanges();
                 }
 
-                await channel.SendMessageAsync($"{imsg.Author.Mention} removed permission **{p.GetCommand(channel.Guild)}** from position #{index + 1}.").ConfigureAwait(false);
+                await channel.SendMessageAsync($"{Context.User.Mention} removed permission **{p.GetCommand(channel.Guild)}** from position #{index + 1}.").ConfigureAwait(false);
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -171,11 +171,11 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task MovePerm(IUserMessage imsg, int from, int to)
+        public async Task MovePerm(int from, int to)
         {
             from -= 1;
             to -= 1;
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
             if (!(from == to || from < 0 || to < 0))
             {
                 try
@@ -281,9 +281,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task SrvrCmd(IUserMessage imsg, Command command, PermissionAction action)
+        public async Task SrvrCmd(CommandInfo command, PermissionAction action)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -310,9 +310,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task SrvrMdl(IUserMessage imsg, Module module, PermissionAction action)
+        public async Task SrvrMdl(ModuleInfo module, PermissionAction action)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -338,9 +338,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task UsrCmd(IUserMessage imsg, Command command, PermissionAction action, [Remainder] IGuildUser user)
+        public async Task UsrCmd(CommandInfo command, PermissionAction action, [Remainder] IGuildUser user)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -366,9 +366,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task UsrMdl(IUserMessage imsg, Module module, PermissionAction action, [Remainder] IGuildUser user)
+        public async Task UsrMdl(ModuleInfo module, PermissionAction action, [Remainder] IGuildUser user)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -394,9 +394,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task RoleCmd(IUserMessage imsg, Command command, PermissionAction action, [Remainder] IRole role)
+        public async Task RoleCmd(CommandInfo command, PermissionAction action, [Remainder] IRole role)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -422,9 +422,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task RoleMdl(IUserMessage imsg, Module module, PermissionAction action, [Remainder] IRole role)
+        public async Task RoleMdl(ModuleInfo module, PermissionAction action, [Remainder] IRole role)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -450,9 +450,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ChnlCmd(IUserMessage imsg, Command command, PermissionAction action, [Remainder] ITextChannel chnl)
+        public async Task ChnlCmd(CommandInfo command, PermissionAction action, [Remainder] ITextChannel chnl)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
             try
             {
                 using (var uow = DbHandler.UnitOfWork())
@@ -483,9 +483,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ChnlMdl(IUserMessage imsg, Module module, PermissionAction action, [Remainder] ITextChannel chnl)
+        public async Task ChnlMdl(ModuleInfo module, PermissionAction action, [Remainder] ITextChannel chnl)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -511,9 +511,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllChnlMdls(IUserMessage imsg, PermissionAction action, [Remainder] ITextChannel chnl)
+        public async Task AllChnlMdls(PermissionAction action, [Remainder] ITextChannel chnl)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -539,9 +539,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllRoleMdls(IUserMessage imsg, PermissionAction action, [Remainder] IRole role)
+        public async Task AllRoleMdls(PermissionAction action, [Remainder] IRole role)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -567,9 +567,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllUsrMdls(IUserMessage imsg, PermissionAction action, [Remainder] IUser user)
+        public async Task AllUsrMdls(PermissionAction action, [Remainder] IUser user)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -595,9 +595,9 @@ namespace NadekoBot.Modules.Permissions
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task AllSrvrMdls(IUserMessage imsg, PermissionAction action)
+        public async Task AllSrvrMdls(PermissionAction action)
         {
-            var channel = (ITextChannel)imsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             using (var uow = DbHandler.UnitOfWork())
             {
@@ -614,7 +614,7 @@ namespace NadekoBot.Modules.Permissions
                 var allowUser = new Permission
                 {
                     PrimaryTarget = PrimaryPermissionType.User,
-                    PrimaryTargetId = imsg.Author.Id,
+                    PrimaryTargetId = Context.User.Id,
                     SecondaryTarget = SecondaryPermissionType.AllModules,
                     SecondaryTargetName = "*",
                     State = true,

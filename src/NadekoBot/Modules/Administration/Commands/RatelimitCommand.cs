@@ -13,13 +13,10 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class RatelimitCommand
+        public class RatelimitCommand : ModuleBase
         {
             public static ConcurrentDictionary<ulong, Ratelimiter> RatelimitingChannels = new ConcurrentDictionary<ulong, Ratelimiter>();
-            private Logger _log { get; }
-
-            private ShardedDiscordClient _client { get; }
+            private static Logger _log { get; }
 
             public class Ratelimiter
             {
@@ -62,10 +59,10 @@ namespace NadekoBot.Modules.Administration
                 }
             }
 
-            public RatelimitCommand()
+            static RatelimitCommand()
             {
-                this._client = NadekoBot.Client;
-                this._log = LogManager.GetCurrentClassLogger();
+                var _client = NadekoBot.Client;
+                _log = LogManager.GetCurrentClassLogger();
 
                _client.MessageReceived += (umsg) =>
                 {
@@ -90,9 +87,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task Slowmode(IUserMessage umsg)
+            public async Task Slowmode()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 Ratelimiter throwaway;
                 if (RatelimitingChannels.TryRemove(channel.Id, out throwaway))
@@ -106,10 +103,11 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task Slowmode(IUserMessage umsg, int msg, int perSec)
+            public async Task Slowmode(int msg, int perSec)
             {
-                await Slowmode(umsg).ConfigureAwait(false); // disable if exists
-                var channel = (ITextChannel)umsg.Channel;
+                await Slowmode().ConfigureAwait(false); // disable if exists
+
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (msg < 1 || perSec < 1 || msg > 100 || perSec > 3600)
                 {

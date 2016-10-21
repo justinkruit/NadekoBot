@@ -11,6 +11,7 @@ using Discord.WebSocket;
 using NadekoBot.Services.Database.Models;
 using System.Linq;
 using NadekoBot.Services.Database;
+using NadekoBot.Extensions;
 
 namespace NadekoBot.Modules.ClashOfClans
 {
@@ -37,10 +38,12 @@ namespace NadekoBot.Modules.ClashOfClans
                         .ToDictionary(g => g.Key, g => g.ToList()));
             }
         }
-        public ClashOfClans(ILocalization loc, CommandService cmds, ShardedDiscordClient client) : base(loc, cmds, client)
-        {
-        }
 
+        public ClashOfClans() : base()
+        {
+
+        }
+        
         private static async Task CheckWar(TimeSpan callExpire, ClashWar war)
         {
             var Bases = war.Bases;
@@ -57,11 +60,11 @@ namespace NadekoBot.Modules.ClashOfClans
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task CreateWar(IUserMessage umsg, int size, [Remainder] string enemyClan = null)
+        public async Task CreateWar(int size, [Remainder] string enemyClan = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
-            if (!(umsg.Author as IGuildUser).GuildPermissions.ManageChannels)
+            if (!(Context.User as IGuildUser).GuildPermissions.ManageChannels)
                 return;
 
             if (string.IsNullOrWhiteSpace(enemyClan))
@@ -81,7 +84,7 @@ namespace NadekoBot.Modules.ClashOfClans
             }
 
 
-            var cw = await CreateWar(enemyClan, size, channel.Guild.Id, umsg.Channel.Id);
+            var cw = await CreateWar(enemyClan, size, channel.Guild.Id, Context.Channel.Id);
 
             wars.Add(cw);
             await channel.SendMessageAsync($"❗🔰**CREATED CLAN WAR AGAINST {cw.ShortPrint()}**").ConfigureAwait(false);
@@ -89,14 +92,14 @@ namespace NadekoBot.Modules.ClashOfClans
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task StartWar(IUserMessage umsg, [Remainder] string number = null)
+        public async Task StartWar([Remainder] string number = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             int num = 0;
             int.TryParse(number, out num);
 
-            var warsInfo = GetWarInfo(umsg, num);
+            var warsInfo = GetWarInfo((SocketGuild)Context.Guild, num);
             if (warsInfo == null)
             {
                 await channel.SendMessageAsync("💢🔰 **That war does not exist.**").ConfigureAwait(false);
@@ -117,9 +120,9 @@ namespace NadekoBot.Modules.ClashOfClans
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ListWar(IUserMessage umsg, [Remainder] string number = null)
+        public async Task ListWar([Remainder] string number = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             // if number is null, print all wars in a short way
             if (string.IsNullOrWhiteSpace(number))
@@ -149,7 +152,7 @@ namespace NadekoBot.Modules.ClashOfClans
             var num = 0;
             int.TryParse(number, out num);
             //if number is not null, print the war needed
-            var warsInfo = GetWarInfo(umsg, num);
+            var warsInfo = GetWarInfo((SocketGuild)Context.Guild, num);
             if (warsInfo == null)
             {
                 await channel.SendMessageAsync("💢🔰 **That war does not exist.**").ConfigureAwait(false);
@@ -160,10 +163,11 @@ namespace NadekoBot.Modules.ClashOfClans
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Claim(IUserMessage umsg, int number, int baseNumber, [Remainder] string other_name = null)
+        public async Task Claim(int number, int baseNumber, [Remainder] string other_name = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
-            var warsInfo = GetWarInfo(umsg, number);
+            var channel = (SocketTextChannel)Context.Channel;
+
+            var warsInfo = GetWarInfo((SocketGuild)Context.Guild, number);
             if (warsInfo == null || warsInfo.Item1.Count == 0)
             {
                 await channel.SendMessageAsync("💢🔰 **That war does not exist.**").ConfigureAwait(false);
@@ -171,7 +175,7 @@ namespace NadekoBot.Modules.ClashOfClans
             }
             var usr =
                 string.IsNullOrWhiteSpace(other_name) ?
-                umsg.Author.Username :
+                Context.User.Username :
                 other_name;
             try
             {
@@ -188,35 +192,26 @@ namespace NadekoBot.Modules.ClashOfClans
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ClaimFinish1(IUserMessage umsg, int number, int baseNumber = 0)
-        {
-            var channel = (ITextChannel)umsg.Channel;
-            await FinishClaim(umsg, number, baseNumber - 1, 1);
-        }
+        public Task ClaimFinish1(int number, int baseNumber = 0) =>
+            FinishClaim(Context, number, baseNumber - 1, 1);
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ClaimFinish2(IUserMessage umsg, int number, int baseNumber = 0)
-        {
-            var channel = (ITextChannel)umsg.Channel;
-            await FinishClaim(umsg, number, baseNumber - 1, 2);
-        }
+        public Task ClaimFinish2(int number, int baseNumber = 0) =>
+            FinishClaim(Context, number, baseNumber - 1, 2);
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ClaimFinish(IUserMessage umsg, int number, int baseNumber = 0)
-        {
-            var channel = (ITextChannel)umsg.Channel;
-            await FinishClaim(umsg, number, baseNumber - 1);
-        }
+        public Task ClaimFinish(int number, int baseNumber = 0) =>
+            FinishClaim(Context, number, baseNumber - 1);
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task EndWar(IUserMessage umsg, int number)
+        public async Task EndWar(int number)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
-            var warsInfo = GetWarInfo(umsg,number);
+            var warsInfo = GetWarInfo((SocketGuild)Context.Guild,number);
             if (warsInfo == null)
             {
                 await channel.SendMessageAsync("💢🔰 That war does not exist.").ConfigureAwait(false);
@@ -233,11 +228,11 @@ namespace NadekoBot.Modules.ClashOfClans
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Unclaim(IUserMessage umsg, int number, [Remainder] string otherName = null)
+        public async Task Unclaim(int number, [Remainder] string otherName = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
-            var warsInfo = GetWarInfo(umsg, number);
+            var warsInfo = GetWarInfo((SocketGuild)Context.Guild, number);
             if (warsInfo == null || warsInfo.Item1.Count == 0)
             {
                 await channel.SendMessageAsync("💢🔰 **That war does not exist.**").ConfigureAwait(false);
@@ -245,7 +240,7 @@ namespace NadekoBot.Modules.ClashOfClans
             }
             var usr =
                 string.IsNullOrWhiteSpace(otherName) ?
-                umsg.Author.Username :
+                Context.User.Username :
                 otherName;
             try
             {
@@ -260,10 +255,10 @@ namespace NadekoBot.Modules.ClashOfClans
             }
         }
 
-        private async Task FinishClaim(IUserMessage umsg, int number, int baseNumber, int stars = 3)
+        private async Task FinishClaim(CommandContext context, int number, int baseNumber, int stars = 3)
         {
-            var channel = (ITextChannel)umsg.Channel;
-            var warInfo = GetWarInfo(umsg, number);
+            var channel = (SocketTextChannel)context.Channel;
+            var warInfo = GetWarInfo(channel.Guild, number);
             if (warInfo == null || warInfo.Item1.Count == 0)
             {
                 await channel.SendMessageAsync("💢🔰 **That war does not exist.**").ConfigureAwait(false);
@@ -274,14 +269,14 @@ namespace NadekoBot.Modules.ClashOfClans
             {
                 if (baseNumber == -1)
                 {
-                    baseNumber = war.FinishClaim(umsg.Author.Username, stars);
+                    baseNumber = war.FinishClaim(context.User.Username, stars);
                     SaveWar(war);
                 }
                 else
                 {
                     war.FinishClaim(baseNumber, stars);
                 }
-                await channel.SendMessageAsync($"❗🔰{umsg.Author.Mention} **DESTROYED** a base #{baseNumber + 1} in a war against {war.ShortPrint()}").ConfigureAwait(false);
+                await channel.SendMessageAsync($"❗🔰{context.User.Mention} **DESTROYED** a base #{baseNumber + 1} in a war against {war.ShortPrint()}").ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -289,12 +284,11 @@ namespace NadekoBot.Modules.ClashOfClans
             }
         }
 
-        private static Tuple<List<ClashWar>, int> GetWarInfo(IUserMessage umsg, int num)
+        private static Tuple<List<ClashWar>, int> GetWarInfo(SocketGuild guild, int num)
         {
-            var channel = (ITextChannel)umsg.Channel;
             //check if there are any wars
             List<ClashWar> wars = null;
-            ClashWars.TryGetValue(channel.Guild.Id, out wars);
+            ClashWars.TryGetValue(guild.Id, out wars);
             if (wars == null || wars.Count == 0)
             {
                 return null;

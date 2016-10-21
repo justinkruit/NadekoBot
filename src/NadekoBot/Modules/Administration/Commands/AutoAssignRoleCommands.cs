@@ -14,15 +14,14 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class AutoAssignRoleCommands
+        public class AutoAssignRoleCommands : ModuleBase
         {
-            private Logger _log { get; }
+            private static Logger _log { get; }
 
-            public AutoAssignRoleCommands()
+            static AutoAssignRoleCommands()
             {
                 var _client = NadekoBot.Client;
-                this._log = LogManager.GetCurrentClassLogger();
+                _log = LogManager.GetCurrentClassLogger();
                 _client.UserJoined += (user) =>
                 {
                     var t = Task.Run(async () =>
@@ -48,9 +47,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageRoles)]
-            public async Task AutoAssignRole(IUserMessage umsg, [Remainder] IRole role = null)
+            public async Task AutoAssignRole([Remainder] IRole role = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 GuildConfig conf;
                 using (var uow = DbHandler.UnitOfWork())

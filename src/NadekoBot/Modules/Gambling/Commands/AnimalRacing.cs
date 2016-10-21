@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
@@ -17,19 +18,15 @@ namespace NadekoBot.Modules.Gambling
     public partial class Gambling
     {
         [Group]
-        public class AnimalRacing
+        public class AnimalRacing : ModuleBase
         {
-
-            public AnimalRacing()
-            {
-            }
-            public static ConcurrentDictionary<ulong, AnimalRace> AnimalRaces = new ConcurrentDictionary<ulong, AnimalRace>();
+            public static ConcurrentDictionary<ulong, AnimalRace> AnimalRaces { get; } = new ConcurrentDictionary<ulong, AnimalRace>();
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Race(IUserMessage umsg)
+            public async Task Race()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 var ar = new AnimalRace(channel.Guild.Id, channel);
 
@@ -39,33 +36,31 @@ namespace NadekoBot.Modules.Gambling
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task JoinRace(IUserMessage umsg, int amount = 0)
+            public async Task JoinRace(int amount = 0)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (amount < 0)
                     amount = 0;
 
                 if (amount > 0)
-                    if (!await CurrencyHandler.RemoveCurrencyAsync((IGuildUser)umsg.Author, "BetRace", amount, true).ConfigureAwait(false))
+                    if (!await CurrencyHandler.RemoveCurrencyAsync((IGuildUser)Context.User, "BetRace", amount, true).ConfigureAwait(false))
                     {
-                        try { await channel.SendMessageAsync($"{umsg.Author.Mention} You don't have enough {Gambling.CurrencyName}s.").ConfigureAwait(false); } catch { }
+                        try { await channel.SendMessageAsync($"{Context.User.Mention} You don't have enough {Gambling.CurrencyName}s.").ConfigureAwait(false); } catch { }
                         return;
                     }
-
-
+                
                 AnimalRace ar;
                 if (!AnimalRaces.TryGetValue(channel.Guild.Id, out ar))
                 {
                     await channel.SendMessageAsync("No race exists on this server");
                     return;
                 }
-                await ar.JoinRace(umsg.Author as IGuildUser, amount);
+                await ar.JoinRace(Context.User as IGuildUser, amount);
             }
 
             public class AnimalRace
             {
-
                 private ConcurrentQueue<string> animals { get; }
 
                 public bool Fail { get; set; }

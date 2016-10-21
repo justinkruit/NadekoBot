@@ -10,8 +10,7 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Attributes
 {
-    [System.AttributeUsage(AttributeTargets.Class)]
-    sealed class NadekoModuleAttribute : ModuleAttribute
+    sealed class NadekoModuleAttribute : GroupAttribute
     {
         //modulename / prefix
         private static Dictionary<string, string> modulePrefixes = null;
@@ -32,7 +31,7 @@ namespace NadekoBot.Attributes
 
         public NadekoModuleAttribute(string moduleName, string defaultPrefix) : base(GetModulePrefix(moduleName, defaultPrefix))
         {
-            AppendSpace = false;
+            //AppendSpace = false;
         }
 
         private static string GetModulePrefix(string moduleName, string defaultPrefix)

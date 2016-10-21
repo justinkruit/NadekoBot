@@ -74,8 +74,7 @@ namespace NadekoBot.Modules.Administration
             }
         }
 
-        [Group]
-        public class AntiRaidCommands
+        public class AntiRaidCommands : ModuleBase
         {
             private static ConcurrentDictionary<ulong, AntiRaidSetting> antiRaidGuilds =
                     new ConcurrentDictionary<ulong, AntiRaidSetting>();
@@ -83,19 +82,19 @@ namespace NadekoBot.Modules.Administration
             private static ConcurrentDictionary<ulong, AntiSpamSetting> antiSpamGuilds =
                     new ConcurrentDictionary<ulong, AntiSpamSetting>();
 
-            private Logger _log { get; }
+            private static Logger _log { get; }
 
-            public AntiRaidCommands(ShardedDiscordClient client)
+            static AntiRaidCommands()
             {
                 _log = LogManager.GetCurrentClassLogger();
 
-                client.MessageReceived += (imsg) =>
+                NadekoBot.Client.MessageReceived += (imsg) =>
                 {
-                    var msg = imsg as IUserMessage;
+                    var msg = imsg as SocketUserMessage;
                     if (msg == null || msg.Author.IsBot)
                         return Task.CompletedTask;
 
-                    var channel = msg.Channel as ITextChannel;
+                    var channel = msg.Channel as SocketTextChannel;
                     if (channel == null)
                         return Task.CompletedTask;
 
@@ -122,7 +121,7 @@ namespace NadekoBot.Modules.Administration
                     return Task.CompletedTask;
                 };
 
-                client.UserJoined += (usr) =>
+                NadekoBot.Client.UserJoined += (usr) =>
                 {
                     if (usr.IsBot)
                         return Task.CompletedTask;
@@ -160,7 +159,7 @@ namespace NadekoBot.Modules.Administration
                 };
             }
             
-            private async Task<string> PunishUser(IGuildUser gu, PunishmentAction action, IRole muteRole, ProtectionType pt)
+            private static async Task<string> PunishUser(IGuildUser gu, PunishmentAction action, IRole muteRole, ProtectionType pt)
             {
                 switch (action)
                 {
@@ -209,9 +208,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.Administrator)]
-            public async Task AntiRaid(IUserMessage imsg, int userThreshold, int seconds, PunishmentAction action)
+            public async Task AntiRaid(int userThreshold, int seconds, PunishmentAction action)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (userThreshold < 2 || userThreshold > 30)
                 {
@@ -248,16 +247,16 @@ namespace NadekoBot.Modules.Administration
                 };
                 antiRaidGuilds.AddOrUpdate(channel.Guild.Id, setting, (id, old) => setting);
 
-                await channel.SendMessageAsync($"{imsg.Author.Mention} `If {userThreshold} or more users join within {seconds} seconds, I will {action} them.`")
+                await channel.SendMessageAsync($"{Context.Message.Author.Mention} `If {userThreshold} or more users join within {seconds} seconds, I will {action} them.`")
                         .ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.Administrator)]
-            public async Task AntiSpam(IUserMessage imsg, int messageCount=3, PunishmentAction action = PunishmentAction.Mute)
+            public async Task AntiSpam(int messageCount=3, PunishmentAction action = PunishmentAction.Mute)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (messageCount < 2 || messageCount > 10)
                     return;

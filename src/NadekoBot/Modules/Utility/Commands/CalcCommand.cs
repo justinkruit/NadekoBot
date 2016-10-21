@@ -11,23 +11,22 @@ using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Utility
 {
-    [Group]
     public partial class Utility
     {
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public static async Task Calculate(IUserMessage msg, [Remainder] string expression)
+        public async Task Calculate([Remainder] string expression)
         {
             try
             {
                 var expr = new NCalc.Expression(expression, NCalc.EvaluateOptions.IgnoreCase);
                 expr.EvaluateParameter += Expr_EvaluateParameter;
                 var result = expr.Evaluate();
-                await msg.Reply(string.Format("⚙ `{0}`", expr.Error ?? result));
+                await Context.Channel.SendMessageAsync(string.Format("⚙ `{0}`", expr.Error ?? result));
             }
             catch (Exception e)
             {
-                await msg.Reply($"Failed to evaluate: {e.Message} ");
+                await Context.Channel.SendMessageAsync($"Failed to evaluate: {e.Message} ");
             }
         }
 
@@ -43,7 +42,7 @@ namespace NadekoBot.Modules.Utility
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task CalcOps(IUserMessage msg)
+        public async Task CalcOps()
         {
             StringBuilder builder = new StringBuilder();
             var selection = typeof(Math).GetTypeInfo().GetMethods().Except(typeof(object).GetTypeInfo().GetMethods()).Select(x =>
@@ -56,7 +55,7 @@ namespace NadekoBot.Modules.Utility
                 return name;
             });
             foreach (var method in selection) builder.AppendLine(method);
-            await msg.ReplyLong(builder.ToString());
+            await Context.Channel.SendMessageAsync(builder.ToString()).ConfigureAwait(false);
         }
     }
     class ExpressionContext

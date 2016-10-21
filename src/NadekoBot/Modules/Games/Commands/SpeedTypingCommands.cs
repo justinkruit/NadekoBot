@@ -147,7 +147,7 @@ namespace NadekoBot.Modules.Games
         }
 
         [Group]
-        public class SpeedTypingCommands
+        public class SpeedTypingCommands : ModuleBase
         {
 
             public static List<TypingArticle> TypingArticles { get; } = new List<TypingArticle>();
@@ -158,18 +158,14 @@ namespace NadekoBot.Modules.Games
             {
                 try { TypingArticles = JsonConvert.DeserializeObject<List<TypingArticle>>(File.ReadAllText(typingArticlesPath)); } catch { }
             }
-            public static ConcurrentDictionary<ulong, TypingGame> RunningContests;
 
-            public SpeedTypingCommands()
-            {
-                RunningContests = new ConcurrentDictionary<ulong, TypingGame>();
-            }
+            public static ConcurrentDictionary<ulong, TypingGame> RunningContests { get; } = new ConcurrentDictionary<ulong, TypingGame>();
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task TypeStart(IUserMessage msg)
+            public async Task TypeStart()
             {
-                var channel = (ITextChannel)msg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 var game = RunningContests.GetOrAdd(channel.Guild.Id, id => new TypingGame(channel));
 
@@ -188,9 +184,10 @@ namespace NadekoBot.Modules.Games
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task TypeStop(IUserMessage imsg)
+            public async Task TypeStop()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 TypingGame game;
                 if (RunningContests.TryRemove(channel.Guild.Id, out game))
                 {
@@ -204,13 +201,13 @@ namespace NadekoBot.Modules.Games
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task Typeadd(IUserMessage imsg, [Remainder] string text)
+            public async Task Typeadd([Remainder] string text)
             {
-                var channel = (ITextChannel)imsg.Channel;
-                
+                var channel = (SocketTextChannel)Context.Channel;
+
                 TypingArticles.Add(new TypingArticle
                 {
-                    Title = $"Text added on {DateTime.UtcNow} by {imsg.Author}",
+                    Title = $"Text added on {DateTime.UtcNow} by {Context.User}",
                     Text = text.SanitizeMentions(),
                 });
 

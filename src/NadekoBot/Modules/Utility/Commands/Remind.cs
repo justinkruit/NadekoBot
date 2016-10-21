@@ -18,24 +18,23 @@ namespace NadekoBot.Modules.Utility
 {
     public partial class Utility
     {
-        [Group]
-        public class RemindCommands
+        public class RemindCommands : ModuleBase
         {
 
-            Regex regex = new Regex(@"^(?:(?<months>\d)mo)?(?:(?<weeks>\d)w)?(?:(?<days>\d{1,2})d)?(?:(?<hours>\d{1,2})h)?(?:(?<minutes>\d{1,2})m)?$",
+            private static Regex regex { get; } = new Regex(@"^(?:(?<months>\d)mo)?(?:(?<weeks>\d)w)?(?:(?<days>\d{1,2})d)?(?:(?<hours>\d{1,2})h)?(?:(?<minutes>\d{1,2})m)?$",
                                     RegexOptions.Compiled | RegexOptions.Multiline);
 
-            private string RemindMessageFormat { get; }
+            private static string RemindMessageFormat { get; }
+            private static Logger _log { get; }
 
-            IDictionary<string, Func<Reminder, string>> replacements = new Dictionary<string, Func<Reminder, string>>
+            private static IDictionary<string, Func<Reminder, string>> replacements = new Dictionary<string, Func<Reminder, string>>
             {
                 { "%message%" , (r) => r.Message },
                 { "%user%", (r) => $"<@!{r.UserId}>" },
                 { "%target%", (r) =>  r.IsPrivate ? "Direct Message" : $"<#{r.ChannelId}>"}
             };
-            private Logger _log { get; }
 
-            public RemindCommands()
+            static RemindCommands()
             {
                 _log = LogManager.GetCurrentClassLogger();
                 List<Reminder> reminders;
@@ -52,7 +51,7 @@ namespace NadekoBot.Modules.Utility
                 }
             }
 
-            private async Task StartReminder(Reminder r)
+            private static async Task StartReminder(Reminder r)
             {
                 var now = DateTime.Now;
                 var twoMins = new TimeSpan(0, 2, 0);
@@ -95,9 +94,9 @@ namespace NadekoBot.Modules.Utility
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Remind(IUserMessage umsg, string meorchannel, string timeStr, [Remainder] string message)
+            public async Task Remind(string meorchannel, string timeStr, [Remainder] string message)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 var meorchStr = meorchannel.ToUpperInvariant();
                 IMessageChannel ch;
@@ -105,7 +104,7 @@ namespace NadekoBot.Modules.Utility
                 if (meorchStr == "ME")
                 {
                     isPrivate = true;
-                    ch = await ((IGuildUser)umsg.Author).CreateDMChannelAsync().ConfigureAwait(false);
+                    ch = await ((IGuildUser)Context.User).CreateDMChannelAsync().ConfigureAwait(false);
                 }
                 else if (meorchStr == "HERE")
                 {
@@ -118,7 +117,7 @@ namespace NadekoBot.Modules.Utility
 
                 if (ch == null)
                 {
-                    await channel.SendMessageAsync($"{umsg.Author.Mention} Something went wrong (channel cannot be found) ;(").ConfigureAwait(false);
+                    await channel.SendMessageAsync($"{Context.User.Mention} Something went wrong (channel cannot be found) ;(").ConfigureAwait(false);
                     return;
                 }
 
@@ -171,7 +170,7 @@ namespace NadekoBot.Modules.Utility
                     IsPrivate = isPrivate,
                     When = time,
                     Message = message,
-                    UserId = umsg.Author.Id,
+                    UserId = Context.User.Id,
                     ServerId = channel.Guild.Id
                 };
 
@@ -181,16 +180,16 @@ namespace NadekoBot.Modules.Utility
                     await uow.CompleteAsync();
                 }
 
-                try { await channel.SendMessageAsync($"⏰ I will remind \"{(ch is ITextChannel ? ((ITextChannel)ch).Name : umsg.Author.Username)}\" to \"{message.SanitizeMentions()}\" in {output}. ({time:d.M.yyyy.} at {time:HH:mm})").ConfigureAwait(false); } catch { }
+                try { await channel.SendMessageAsync($"⏰ I will remind \"{(ch is ITextChannel ? ((ITextChannel)ch).Name : Context.User.Username)}\" to \"{message.SanitizeMentions()}\" in {output}. ({time:d.M.yyyy.} at {time:HH:mm})").ConfigureAwait(false); } catch { }
                 await StartReminder(rem);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task RemindTemplate(IUserMessage umsg, [Remainder] string arg)
+            public async Task RemindTemplate([Remainder] string arg)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (string.IsNullOrWhiteSpace(arg))
                     return;

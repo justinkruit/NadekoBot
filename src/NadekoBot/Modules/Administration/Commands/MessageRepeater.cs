@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using NadekoBot.Attributes;
+using NadekoBot.Extensions;
 using NadekoBot.Services;
 using NadekoBot.Services.Database;
 using NadekoBot.Services.Database.Models;
@@ -17,10 +18,9 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class RepeatCommands
+        public class RepeatCommands : ModuleBase
         {
-            public ConcurrentDictionary<ulong, RepeatRunner> repeaters;
+            public static ConcurrentDictionary<ulong, RepeatRunner> repeaters { get; }
 
             public class RepeatRunner
             {
@@ -72,7 +72,7 @@ namespace NadekoBot.Modules.Administration
                 }
             }
 
-            public RepeatCommands()
+            static RepeatCommands()
             {
                 using (var uow = DbHandler.UnitOfWork())
                 {
@@ -83,9 +83,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task RepeatInvoke(IUserMessage imsg)
+            public async Task RepeatInvoke()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 RepeatRunner rep;
                 if (!repeaters.TryGetValue(channel.Id, out rep))
@@ -99,9 +99,10 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Repeat(IUserMessage imsg)
+            public async Task Repeat()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 RepeatRunner rep;
                 if (repeaters.TryRemove(channel.Id, out rep))
                 {
@@ -119,9 +120,9 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Repeat(IUserMessage imsg, int minutes, [Remainder] string message)
+            public async Task Repeat(int minutes, [Remainder] string message)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (minutes < 1 || minutes > 10080)
                     return;

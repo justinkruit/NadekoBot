@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Modules.Searches.Models;
 using Newtonsoft.Json;
@@ -13,17 +14,17 @@ namespace NadekoBot.Modules.Searches
     public partial class Searches
     {
         [Group]
-        public class PokemonSearchCommands
+        public class PokemonSearchCommands : ModuleBase
         {
-            private static Dictionary<string, SearchPokemon> pokemons = new Dictionary<string, SearchPokemon>();
-            private static Dictionary<string, SearchPokemonAbility> pokemonAbilities = new Dictionary<string, SearchPokemonAbility>();
+            private static Dictionary<string, SearchPokemon> pokemons { get; } = new Dictionary<string, SearchPokemon>();
+            private static Dictionary<string, SearchPokemonAbility> pokemonAbilities { get; } = new Dictionary<string, SearchPokemonAbility>();
+
+            private static Logger _log { get; }
 
             public const string PokemonAbilitiesFile = "data/pokemon/pokemon_abilities.json";
-
             public const string PokemonListFile = "data/pokemon/pokemon_list.json";
-            private Logger _log;
 
-            public PokemonSearchCommands()
+            static PokemonSearchCommands()
             {
                 _log = LogManager.GetCurrentClassLogger();
                 if (File.Exists(PokemonListFile))
@@ -40,9 +41,9 @@ namespace NadekoBot.Modules.Searches
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Pokemon(IUserMessage umsg, [Remainder] string pokemon = null)
+            public async Task Pokemon([Remainder] string pokemon = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 pokemon = pokemon?.Trim().ToUpperInvariant();
                 if (string.IsNullOrWhiteSpace(pokemon))
@@ -61,9 +62,9 @@ namespace NadekoBot.Modules.Searches
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task PokemonAbility(IUserMessage umsg, [Remainder] string ability = null)
+            public async Task PokemonAbility([Remainder] string ability = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 ability = ability?.Trim().ToUpperInvariant().Replace(" ", "");
                 if (string.IsNullOrWhiteSpace(ability))

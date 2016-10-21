@@ -15,7 +15,6 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using NadekoBot.Modules.Permissions;
-using Module = Discord.Commands.Module;
 using NadekoBot.TypeReaders;
 using System.Collections.Concurrent;
 using NadekoBot.Modules.Music;
@@ -62,22 +61,25 @@ namespace NadekoBot
             CommandService = new CommandService();
             Localizer = new Localization();
             Google = new GoogleApiService();
-            CommandHandler = new CommandHandler(Client, CommandService);
-            Stats = new StatsService(Client, CommandHandler);
+
+
 
             //setup DI
             var depMap = new DependencyMap();
             depMap.Add<ILocalization>(Localizer);
-            depMap.Add<ShardedDiscordClient >(Client);
+            depMap.Add<ShardedDiscordClient>(Client);
             depMap.Add<CommandService>(CommandService);
             depMap.Add<IGoogleApiService>(Google);
+
+            CommandHandler = new CommandHandler(Client, CommandService);
+            Stats = new StatsService(Client, CommandHandler);
 
 
             //setup typereaders
             CommandService.AddTypeReader<PermissionAction>(new PermissionActionTypeReader());
-            CommandService.AddTypeReader<Command>(new CommandTypeReader());
-            CommandService.AddTypeReader<Module>(new ModuleTypeReader());
-            CommandService.AddTypeReader<IGuild>(new GuildTypeReader());
+            CommandService.AddTypeReader<CommandInfo>(new CommandTypeReader());
+            CommandService.AddTypeReader<ModuleInfo>(new ModuleTypeReader());
+            CommandService.AddTypeReader<SocketGuild>(new GuildTypeReader());
 
             //connect
             await Client.LoginAsync(TokenType.Bot, Credentials.Token).ConfigureAwait(false);
@@ -93,10 +95,9 @@ namespace NadekoBot
             }
             // start handling messages received in commandhandler
             await CommandHandler.StartHandling();
-
-            await CommandService.LoadAssembly(Assembly.GetEntryAssembly(), depMap).ConfigureAwait(false);
+            await CommandService.AddModules(Assembly.GetEntryAssembly()).ConfigureAwait(false);
 #if !GLOBAL_NADEKO
-            await CommandService.Load(new Music(Localizer, CommandService, Client, Google)).ConfigureAwait(false);
+            await CommandService.AddModule<Music>().ConfigureAwait(false);
 #endif
             Ready = true;
             Console.WriteLine(await Stats.Print().ConfigureAwait(false));

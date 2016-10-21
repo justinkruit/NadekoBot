@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Services;
 using NadekoBot.Services.Database;
@@ -15,16 +16,16 @@ namespace NadekoBot.Modules.Permissions
     public partial class Permissions
     {
         [Group]
-        public class FilterCommands
+        public class FilterCommands : ModuleBase
         {
-            public static ConcurrentHashSet<ulong> InviteFilteringChannels { get; set; }
-            public static ConcurrentHashSet<ulong> InviteFilteringServers { get; set; }
+            public static ConcurrentHashSet<ulong> InviteFilteringChannels { get; }
+            public static ConcurrentHashSet<ulong> InviteFilteringServers { get; }
 
             //serverid, filteredwords
-            private static ConcurrentDictionary<ulong, ConcurrentHashSet<string>> ServerFilteredWords { get; set; }
+            private static ConcurrentDictionary<ulong, ConcurrentHashSet<string>> ServerFilteredWords { get; }
 
-            public static ConcurrentHashSet<ulong> WordFilteringChannels { get; set; }
-            public static ConcurrentHashSet<ulong> WordFilteringServers { get; set; }
+            public static ConcurrentHashSet<ulong> WordFilteringChannels { get; }
+            public static ConcurrentHashSet<ulong> WordFilteringServers { get; }
 
             public static ConcurrentHashSet<string> FilteredWordsForChannel(ulong channelId, ulong guildId)
             {
@@ -65,9 +66,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task SrvrFilterInv(IUserMessage imsg)
+            public async Task SrvrFilterInv()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 bool enabled;
                 using (var uow = DbHandler.UnitOfWork())
@@ -91,9 +92,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task ChnlFilterInv(IUserMessage imsg)
+            public async Task ChnlFilterInv()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 int removed;
                 using (var uow = DbHandler.UnitOfWork())
@@ -124,9 +125,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task SrvrFilterWords(IUserMessage imsg)
+            public async Task SrvrFilterWords()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 bool enabled;
                 using (var uow = DbHandler.UnitOfWork())
@@ -150,9 +151,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task ChnlFilterWords(IUserMessage imsg)
+            public async Task ChnlFilterWords()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 int removed;
                 using (var uow = DbHandler.UnitOfWork())
@@ -183,9 +184,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task FilterWord(IUserMessage imsg, [Remainder] string word)
+            public async Task FilterWord([Remainder] string word)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 word = word?.Trim().ToLowerInvariant();
 
@@ -223,9 +224,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task LstFilterWords(IUserMessage imsg)
+            public async Task LstFilterWords()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 ConcurrentHashSet<string> filteredWords;
                 ServerFilteredWords.TryGetValue(channel.Guild.Id, out filteredWords);

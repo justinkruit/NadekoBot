@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
@@ -24,7 +25,7 @@ namespace NadekoBot.Modules.Searches
                 obj["name"].GetHashCode();
         }
 
-        private string[] trashTalk { get; } = { "Better ban your counters. You are going to carry the game anyway.",
+        private static string[] trashTalk { get; } = { "Better ban your counters. You are going to carry the game anyway.",
                                                 "Go with the flow. Don't think. Just ban one of these.",
                                                 "DONT READ BELOW! Ban Urgot mid OP 100%. Im smurf Diamond 1.",
                                                 "Ask your teammates what would they like to play, and ban that.",
@@ -34,9 +35,9 @@ namespace NadekoBot.Modules.Searches
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Lolban(IUserMessage umsg)
+        public async Task Lolban()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
 
 

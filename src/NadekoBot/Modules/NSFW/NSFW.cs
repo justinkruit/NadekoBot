@@ -18,15 +18,15 @@ namespace NadekoBot.Modules.NSFW
     [NadekoModule("NSFW", "~")]
     public class NSFW : DiscordModule
     {
-        public NSFW(ILocalization loc, CommandService cmds, ShardedDiscordClient client) : base(loc, cmds, client)
+        public NSFW() : base()
         {
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Hentai(IUserMessage umsg, [Remainder] string tag = null)
+        public async Task Hentai([Remainder] string tag = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             tag = tag?.Trim() ?? "";
 
@@ -43,9 +43,9 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Danbooru(IUserMessage umsg, [Remainder] string tag = null)
+        public async Task Danbooru([Remainder] string tag = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             tag = tag?.Trim() ?? "";
             var link = await GetDanbooruImageLink(tag).ConfigureAwait(false);
@@ -57,9 +57,9 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Konachan(IUserMessage umsg, [Remainder] string tag = null)
+        public async Task Konachan([Remainder] string tag = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             tag = tag?.Trim() ?? "";
             var link = await GetKonachanImageLink(tag).ConfigureAwait(false);
@@ -71,9 +71,9 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Gelbooru(IUserMessage umsg, [Remainder] string tag = null)
+        public async Task Gelbooru([Remainder] string tag = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             tag = tag?.Trim() ?? "";
             var link = await GetGelbooruImageLink(tag).ConfigureAwait(false);
@@ -85,9 +85,9 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Rule34(IUserMessage umsg, [Remainder] string tag = null)
+        public async Task Rule34([Remainder] string tag = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             tag = tag?.Trim() ?? "";
             var link = await GetRule34ImageLink(tag).ConfigureAwait(false);
@@ -99,9 +99,9 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task E621(IUserMessage umsg, [Remainder] string tag = null)
+        public async Task E621([Remainder] string tag = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             tag = tag?.Trim() ?? "";
             var link = await GetE621ImageLink(tag).ConfigureAwait(false);
@@ -113,18 +113,18 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Cp(IUserMessage umsg)
+        public async Task Cp()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             await channel.SendMessageAsync("http://i.imgur.com/MZkY1md.jpg").ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Boobs(IUserMessage umsg)
+        public async Task Boobs()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
             try
             {
                 JToken obj;
@@ -142,9 +142,9 @@ namespace NadekoBot.Modules.NSFW
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Butts(IUserMessage umsg)
+        public async Task Butts()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             try
             {

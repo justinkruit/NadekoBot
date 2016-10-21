@@ -18,10 +18,9 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class PlayingRotateCommands
+        public class PlayingRotateCommands : ModuleBase
         {
-            private Logger _log { get; }
+            private static Logger _log { get; }
             public static List<PlayingStatus> RotatingStatusMessages { get; }
             public static bool RotatingStatuses { get; private set; } = false;
 
@@ -33,12 +32,10 @@ namespace NadekoBot.Modules.Administration
                     RotatingStatusMessages = conf.RotatingStatusMessages;
                     RotatingStatuses = conf.RotatingStatuses;
                 }
-            }
 
-            public PlayingRotateCommands()
-            {
                 _log = LogManager.GetCurrentClassLogger();
-                Task.Run(async () =>
+
+                var t = Task.Run(async () =>
                 {
                     var index = 0;
                     do
@@ -58,8 +55,8 @@ namespace NadekoBot.Modules.Administration
                                 if (string.IsNullOrWhiteSpace(status))
                                     continue;
                                 PlayingPlaceholders.ForEach(e => status = status.Replace(e.Key, e.Value()));
-                                await (await NadekoBot.Client.GetCurrentUserAsync())
-                                        .ModifyStatusAsync(mpp => mpp.Game = new Game(status))
+                                await NadekoBot.Client.CurrentUser
+                                        .ModifyStatusAsync(mpp => mpp.Game = new Discord.API.Game() { Name = status })
                                         .ConfigureAwait(false);
                             }
                         }
@@ -77,8 +74,8 @@ namespace NadekoBot.Modules.Administration
 
             public static Dictionary<string, Func<string>> PlayingPlaceholders { get; } =
                 new Dictionary<string, Func<string>> {
-                    {"%servers%", () => NadekoBot.Client.GetGuilds().Count().ToString()},
-                    {"%users%", () => NadekoBot.Client.GetGuilds().Select(s => s.GetUsers().Count).Sum().ToString()},
+                    {"%servers%", () => NadekoBot.Client.Guilds.Count().ToString()},
+                    {"%users%", () => NadekoBot.Client.Guilds.Select(s => s.Users.Count).Sum().ToString()},
                     {"%playing%", () => {
                             var cnt = Music.Music.MusicPlayers.Count(kvp => kvp.Value.CurrentSong != null);
                             if (cnt != 1) return cnt.ToString();
@@ -97,10 +94,10 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task RotatePlaying(IUserMessage umsg)
+            public async Task RotatePlaying()
             {
-                var channel = (ITextChannel)umsg.Channel;
-                
+                var channel = (SocketTextChannel)Context.Channel;
+
                 using (var uow = DbHandler.UnitOfWork())
                 {
                     var config = uow.BotConfig.GetOrCreate();
@@ -117,9 +114,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task AddPlaying(IUserMessage umsg, [Remainder] string status)
+            public async Task AddPlaying([Remainder] string status)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 using (var uow = DbHandler.UnitOfWork())
                 {
@@ -136,17 +133,17 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task ListPlaying(IUserMessage umsg)
+            public async Task ListPlaying()
             {
-                var channel = (ITextChannel)umsg.Channel;
-                
+                var channel = (SocketTextChannel)Context.Channel;
+
 
                 if (!RotatingStatusMessages.Any())
                     await channel.SendMessageAsync("`No rotating playing statuses set.`");
                 else
                 {
                     var i = 1;
-                    await channel.SendMessageAsync($"{umsg.Author.Mention} `Here is a list of rotating statuses:`\n\n\t" + string.Join("\n\t", RotatingStatusMessages.Select(rs => $"`{i++}.` {rs.Status}")));
+                    await channel.SendMessageAsync($"{Context.Message.Author.Mention} `Here is a list of rotating statuses:`\n\n\t" + string.Join("\n\t", RotatingStatusMessages.Select(rs => $"`{i++}.` {rs.Status}")));
                 }
 
             }
@@ -154,9 +151,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task RemovePlaying(IUserMessage umsg, int index)
+            public async Task RemovePlaying(int index)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
                 index -= 1;
 
                 string msg = "";
@@ -171,7 +168,7 @@ namespace NadekoBot.Modules.Administration
                     RotatingStatusMessages.RemoveAt(index);
                     await uow.CompleteAsync();
                 }
-                await channel.SendMessageAsync($"`Removed the the playing message:` {msg}").ConfigureAwait(false);
+                await channel.SendMessageAsync($"{Context.Message.Author.Mention}`Removed the the playing message:` {msg}").ConfigureAwait(false);
             }
         }
     }

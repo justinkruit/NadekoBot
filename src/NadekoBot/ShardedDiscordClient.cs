@@ -17,22 +17,23 @@ namespace NadekoBot
         private DiscordSocketConfig discordSocketConfig;
         private Logger _log { get; }
 
-        public Func<IGuildUser, Task> UserJoined { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IMessage, Task> MessageReceived { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IGuildUser, Task> UserLeft { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IGuildUser, IGuildUser, Task> UserUpdated { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<Optional<IMessage>, IMessage, Task> MessageUpdated { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<ulong, Optional<IMessage>, Task> MessageDeleted { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IUser, IGuild, Task> UserBanned { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IUser, IGuild, Task> UserUnbanned { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IGuildUser, IPresence, IPresence, Task> UserPresenceUpdated { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IUser, IVoiceState, IVoiceState, Task> UserVoiceStateUpdated { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IChannel, Task> ChannelCreated { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IChannel, Task> ChannelDestroyed { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<IChannel, IChannel, Task> ChannelUpdated { get; internal set; } = delegate { return Task.CompletedTask; };
-        public Func<Exception, Task> Disconnected { get; internal set; } = delegate { return Task.CompletedTask; };
+        public event Func<SocketGuildUser, Task> UserJoined =  delegate { return Task.CompletedTask; };
+        public event Func<SocketMessage, Task> MessageReceived = delegate { return Task.CompletedTask; };
+        public event Func<SocketGuildUser, Task> UserLeft = delegate { return Task.CompletedTask; };
+        public event Func<SocketGuildUser, SocketGuildUser, Task> UserUpdated = delegate { return Task.CompletedTask; };
+        public event Func<Optional<SocketMessage>, SocketMessage, Task> MessageUpdated = delegate { return Task.CompletedTask; };
+        public event Func<ulong, Optional<SocketMessage>, Task> MessageDeleted = delegate { return Task.CompletedTask; };
+        public event Func<SocketUser, SocketGuild, Task> UserBanned = delegate { return Task.CompletedTask; };
+        public event Func<SocketGuildUser, SocketGuild, Task> UserUnbanned = delegate { return Task.CompletedTask; };
+        public event Func<SocketUser, SocketPresence, SocketPresence, Task> UserPresenceUpdated = delegate { return Task.CompletedTask; };
+        public event Func<SocketUser, SocketVoiceState, SocketVoiceState, Task> UserVoiceStateUpdated = delegate { return Task.CompletedTask; };
+        public event Func<SocketChannel, Task> ChannelCreated = delegate { return Task.CompletedTask; };
+        public event Func<SocketChannel, Task> ChannelDestroyed = delegate { return Task.CompletedTask; };
+        public event Func<SocketChannel, SocketChannel, Task> ChannelUpdated = delegate { return Task.CompletedTask; };
+        public event Func<Exception, Task> Disconnected = delegate { return Task.CompletedTask; };
 
         private IReadOnlyList<DiscordSocketClient> Clients { get; }
+        public IDiscordClient Zero => Clients[0];
 
         public ShardedDiscordClient (DiscordSocketConfig discordSocketConfig)
         {
@@ -64,16 +65,11 @@ namespace NadekoBot
             Clients = clientList.AsReadOnly();
         }
 
-        public ISelfUser GetCurrentUser() =>
-            Clients[0].GetCurrentUser();
+        public ISelfUser CurrentUser => Clients[0].CurrentUser;
 
-        public Task<ISelfUser> GetCurrentUserAsync() =>
-            Clients[0].GetCurrentUserAsync();
+        public IReadOnlyCollection<SocketGuild> Guilds => Clients.SelectMany(c => c.Guilds).ToArray();
 
-        public IReadOnlyCollection<IGuild> GetGuilds() =>
-            Clients.SelectMany(c => c.GetGuilds()).ToArray();
-
-        public IGuild GetGuild(ulong id) =>
+        public SocketGuild GetGuild(ulong id) =>
             Clients.Select(c => c.GetGuild(id)).FirstOrDefault(g => g != null);
 
         public Task<IDMChannel> GetDMChannelAsync(ulong channelId) =>
@@ -86,6 +82,6 @@ namespace NadekoBot
             Task.WhenAll(Clients.Select(async c => { await c.ConnectAsync(); _log.Info($"Shard #{c.ShardId} connected."); }));
 
         internal Task DownloadAllUsersAsync() =>
-            Task.WhenAll(Clients.Select(async c => { await c.DownloadAllUsersAsync(); _log.Info($"Shard #{c.ShardId} downloaded {c.GetGuilds().Sum(g => g.GetUsers().Count)} users."); }));
+            Task.WhenAll(Clients.Select(async c => { await c.DownloadAllUsersAsync(); _log.Info($"Shard #{c.ShardId} downloaded {c.Guilds.Sum(g => g.Users.Count)} users."); }));
     }
 }

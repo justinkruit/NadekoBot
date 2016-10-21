@@ -27,10 +27,7 @@ namespace NadekoBot.Modules.CustomReactions
                 GuildReactions = new ConcurrentDictionary<ulong, ConcurrentHashSet<CustomReaction>>(items.Where(g => g.GuildId != null && g.GuildId != 0).GroupBy(k => k.GuildId.Value).ToDictionary(g => g.Key, g => new ConcurrentHashSet<CustomReaction>(g)));
                 GlobalReactions = new ConcurrentHashSet<CustomReaction>(items.Where(g => g.GuildId == null || g.GuildId == 0));
             }
-        }
-        public CustomReactions(ILocalization loc, CommandService cmds, ShardedDiscordClient client) : base(loc, cmds, client)
-        {
-            client.MessageReceived += (imsg) =>
+            NadekoBot.Client.MessageReceived += (imsg) =>
             {
                 var umsg = imsg as IUserMessage;
                 if (umsg == null || imsg.Author.IsBot)
@@ -75,18 +72,22 @@ namespace NadekoBot.Modules.CustomReactions
             };
         }
 
-        [NadekoCommand, Usage, Description, Aliases]
-        public async Task AddCustReact(IUserMessage imsg, string key, [Remainder] string message)
+        public CustomReactions() : base()
         {
-            var channel = imsg.Channel as ITextChannel;
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        public async Task AddCustReact(string key, [Remainder] string message)
+        {
+            var channel = Context.Channel as ITextChannel;
             if (string.IsNullOrWhiteSpace(message) || string.IsNullOrWhiteSpace(key))
                 return;
 
             key = key.ToLowerInvariant();
 
-            if ((channel == null && !NadekoBot.Credentials.IsOwner(imsg.Author)) || (channel != null && !((IGuildUser)imsg.Author).GuildPermissions.Administrator))
+            if ((channel == null && !NadekoBot.Credentials.IsOwner(Context.User)) || (channel != null && !((IGuildUser)Context.User).GuildPermissions.Administrator))
             {
-                try { await imsg.Channel.SendMessageAsync("Insufficient permissions. Requires Bot ownership for global custom reactions, and Administrator for guild custom reactions."); } catch { }
+                try { await Context.Channel.SendMessageAsync("Insufficient permissions. Requires Bot ownership for global custom reactions, and Administrator for guild custom reactions."); } catch { }
                 return;
             }
 
@@ -115,13 +116,13 @@ namespace NadekoBot.Modules.CustomReactions
                 reactions.Add(cr);
             }
 
-            await imsg.Channel.SendMessageAsync($"`Added new custom reaction:`\n\t`Trigger:` {key}\n\t`Response:` {message}").ConfigureAwait(false);
+            await Context.Channel.SendMessageAsync($"`Added new custom reaction:`\n\t`Trigger:` {key}\n\t`Response:` {message}").ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task ListCustReact(IUserMessage imsg,int page = 1)
+        public async Task ListCustReact(int page = 1)
         {
-            var channel = imsg.Channel as ITextChannel;
+            var channel = Context.Channel as ITextChannel;
 
             if (page < 1 || page > 1000)
                 return;
@@ -132,16 +133,16 @@ namespace NadekoBot.Modules.CustomReactions
                 customReactions = GuildReactions.GetOrAdd(channel.Guild.Id, new ConcurrentHashSet<CustomReaction>());
 
             if (customReactions == null || !customReactions.Any())
-                await imsg.Channel.SendMessageAsync("`No custom reactions found`").ConfigureAwait(false);
+                await Context.Channel.SendMessageAsync("`No custom reactions found`").ConfigureAwait(false);
             else
-                await imsg.Channel.SendMessageAsync($"`Page {page} of custom reactions:`\n" + string.Join("\n", customReactions.OrderBy(cr => cr.Trigger).Skip((page - 1) * 15).Take(15).Select(cr => $"`#{cr.Id}`  `Trigger:` {cr.Trigger}")))
+                await Context.Channel.SendMessageAsync($"`Page {page} of custom reactions:`\n" + string.Join("\n", customReactions.OrderBy(cr => cr.Trigger).Skip((page - 1) * 15).Take(15).Select(cr => $"`#{cr.Id}`  `Trigger:` {cr.Trigger}")))
                              .ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task ShowCustReact(IUserMessage imsg, int id)
+        public async Task ShowCustReact(int id)
         {
-            var channel = imsg.Channel as ITextChannel;
+            var channel = Context.Channel as ITextChannel;
 
             ConcurrentHashSet<CustomReaction> customReactions;
             if (channel == null)
@@ -152,22 +153,23 @@ namespace NadekoBot.Modules.CustomReactions
             var found = customReactions.FirstOrDefault(cr => cr.Id == id);
 
             if (found == null)
-                await imsg.Channel.SendMessageAsync("`No custom reaction found with that id.`").ConfigureAwait(false);
+                await Context.Channel.SendMessageAsync("`No custom reaction found with that id.`")
+                             .ConfigureAwait(false);
             else
             {
-                await imsg.Channel.SendMessageAsync($"`Custom reaction #{id}`\n`Trigger:` {found.Trigger}\n`Response:` {found.Response}")
+                await Context.Channel.SendMessageAsync($"`Custom reaction #{id}`\n`Trigger:` {found.Trigger}\n`Response:` {found.Response}")
                              .ConfigureAwait(false);
             }
         }
 
         [NadekoCommand, Usage, Description, Aliases]
-        public async Task DelCustReact(IUserMessage imsg, int id)
+        public async Task DelCustReact(int id)
         {
-            var channel = imsg.Channel as ITextChannel;
+            var channel = Context.Channel as ITextChannel;
 
-            if ((channel == null && !NadekoBot.Credentials.IsOwner(imsg.Author)) || (channel != null && !((IGuildUser)imsg.Author).GuildPermissions.Administrator))
+            if ((channel == null && !NadekoBot.Credentials.IsOwner(Context.User)) || (channel != null && !((IGuildUser)Context.User).GuildPermissions.Administrator))
             {
-                try { await imsg.Channel.SendMessageAsync("Insufficient permissions. Requires Bot ownership for global custom reactions, and Administrator for guild custom reactions."); } catch { }
+                try { await Context.Channel.SendMessageAsync("Insufficient permissions. Requires Bot ownership for global custom reactions, and Administrator for guild custom reactions."); } catch { }
                 return;
             }
 
@@ -196,9 +198,9 @@ namespace NadekoBot.Modules.CustomReactions
             }
 
             if (success)
-                await imsg.Channel.SendMessageAsync("**Successfully deleted custom reaction** " + toDelete.ToString()).ConfigureAwait(false);
+                await Context.Channel.SendMessageAsync("**Successfully deleted custom reaction** " + toDelete.ToString()).ConfigureAwait(false);
             else
-                await imsg.Channel.SendMessageAsync("`Failed to find that custom reaction.`").ConfigureAwait(false);
+                await Context.Channel.SendMessageAsync("`Failed to find that custom reaction.`").ConfigureAwait(false);
         }
     }
 }

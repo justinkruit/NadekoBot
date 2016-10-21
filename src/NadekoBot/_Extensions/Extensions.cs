@@ -24,7 +24,22 @@ namespace NadekoBot.Extensions
             http.DefaultRequestHeaders.Add("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
         }
 
-        public static async Task<IMessage> SendMessageToOwnerAsync(this IGuild guild, string message)
+        public static IEnumerable<IRole> GetRoles(this IGuildUser user) =>
+            user.RoleIds.Select(r => user.Guild.GetRole(r)).Where(r => r != null);
+
+        public static IEnumerable<SocketVoiceChannel> GetVoiceChannels(this SocketGuild guild) =>
+            guild.Channels.Select(c => c as SocketVoiceChannel).Where(c => c != null);
+
+        public static IEnumerable<SocketTextChannel> GetTextChannels(this SocketGuild guild) =>
+            guild.Channels.Select(c => c as SocketTextChannel).Where(c => c != null);
+
+        public static SocketTextChannel GetTextChannel(this SocketGuild guild, ulong channelId) =>
+            guild.Channels.FirstOrDefault(c => c.Id == channelId) as SocketTextChannel;
+
+        public static SocketUser GetUser(this SocketGuild guild, ulong userId) =>
+            guild.Users.FirstOrDefault(u => u.Id == userId);
+
+        public static async Task<IUserMessage> SendMessageToOwnerAsync(this SocketGuild guild, string message)
         {
             var ownerPrivate = await (await guild.GetOwnerAsync().ConfigureAwait(false)).CreateDMChannelAsync()
                                 .ConfigureAwait(false);
@@ -73,14 +88,11 @@ namespace NadekoBot.Extensions
         public static async Task<IUserMessage> SendFileAsync(this IGuildUser user, Stream fileStream, string fileName, string caption = null, bool isTTS = false) =>
             await (await user.CreateDMChannelAsync().ConfigureAwait(false)).SendFileAsync(fileStream, fileName, caption, isTTS).ConfigureAwait(false);
 
-        public static async Task<IUserMessage> Reply(this IUserMessage msg, string content) =>
-            await msg.Channel.SendMessageAsync(content).ConfigureAwait(false);
-
         public static bool IsAuthor(this IUserMessage msg) =>
-            NadekoBot.Client.GetCurrentUser().Id == msg.Author.Id;
+            NadekoBot.Client.CurrentUser.Id == msg.Author.Id;
 
-        public static IEnumerable<IUser> Members(this IRole role) =>
-            NadekoBot.Client.GetGuild(role.GuildId)?.GetUsers().Where(u => u.Roles.Contains(role)) ?? Enumerable.Empty<IUser>();
+        public static IEnumerable<IUser> Members(this SocketRole role) =>
+            role.Guild?.Users.Where(u => u.RoleIds.Contains(role.Id)) ?? Enumerable.Empty<IUser>();
 
         public static async Task<IUserMessage[]> ReplyLong(this IUserMessage msg, string content, string[] breakOn = null, string addToPartialEnd = "", string addToPartialStart = "")
         {

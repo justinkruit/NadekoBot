@@ -21,14 +21,12 @@ namespace NadekoBot.Modules.Utility
 {
     public partial class Utility
     {
-        [Group]
-        public class UnitConverterCommands
+        public class UnitConverterCommands : ModuleBase
         {
-
             public static List<ConvertUnit> Units { get; set; } = new List<ConvertUnit>();
-            private static Logger _log;
-            private static Timer _timer;
-            private static TimeSpan updateInterval = new TimeSpan(12, 0, 0);
+            private static Logger _log { get; }
+            private static Timer _timer { get; }
+            private static TimeSpan updateInterval { get; } = new TimeSpan(12, 0, 0);
 
             static UnitConverterCommands()
             {
@@ -57,16 +55,12 @@ namespace NadekoBot.Modules.Utility
                 {
                     _log.Warn("Could not load units: " + e.Message);
                 }
-            }
 
-            public UnitConverterCommands()
-            {
                 _timer = new Timer(async (obj) => await UpdateCurrency(), null, (int)updateInterval.TotalMilliseconds, (int)updateInterval.TotalMilliseconds);
-
             }
-
-            public async Task UpdateCurrency()
-            {try
+            public static async Task UpdateCurrency()
+            {
+                try
                 {
                     var currencyRates = await UpdateCurrencyRates();
                     var unitTypeString = "currency";
@@ -97,13 +91,15 @@ namespace NadekoBot.Modules.Utility
                     Units.AddRange(range);
                     _log.Info("Updated Currency");
                 }
-                catch {
+                catch
+                {
                     _log.Warn("Failed updating currency.");
                 }
             }
+
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task ConvertList(IUserMessage msg)
+            public async Task ConvertList()
             {
                 var sb = new StringBuilder("Units that can be used by the converter: \n");
                 var res = Units.GroupBy(x => x.UnitType);
@@ -113,21 +109,21 @@ namespace NadekoBot.Modules.Utility
                     sb.AppendLine(string.Join(",", group.Select(x => x.Triggers.FirstOrDefault()).OrderBy(x => x)));
                     sb.AppendLine("```");
                 }
-                await msg.ReplyLong(sb.ToString(),  breakOn: new[] { "```xl\n", "\n" });
+                await Context.Channel.SendMessageAsync(sb.ToString());
             }
             [NadekoCommand, Usage, Description, Aliases]
-            public async Task Convert(IUserMessage msg, string origin, string target, decimal value)
+            public async Task Convert(string origin, string target, decimal value)
             {
                 var originUnit = Units.Find(x => x.Triggers.Select(y => y.ToLowerInvariant()).Contains(origin.ToLowerInvariant()));
                 var targetUnit = Units.Find(x => x.Triggers.Select(y => y.ToLowerInvariant()).Contains(target.ToLowerInvariant()));
                 if (originUnit == null || targetUnit == null)
                 {
-                    await msg.Reply(string.Format("Cannot convert {0} to {1}: units not found", origin, target));
+                    await Context.Channel.SendMessageAsync(string.Format("Cannot convert {0} to {1}: units not found", origin, target));
                     return;
                 }
                 if (originUnit.UnitType != targetUnit.UnitType)
                 {
-                    await msg.Reply(string.Format("Cannot convert {0} to {1}: types of unit are not equal", originUnit.Triggers.First(), targetUnit.Triggers.First()));
+                    await Context.Channel.SendMessageAsync(string.Format("Cannot convert {0} to {1}: types of unit are not equal", originUnit.Triggers.First(), targetUnit.Triggers.First()));
                     return;
                 }
                 decimal res;
@@ -171,7 +167,7 @@ namespace NadekoBot.Modules.Utility
                 }
                 res = Math.Round(res, 4);
 
-                await msg.Reply(string.Format("{0} {1} is equal to {2} {3}", value, (originUnit.Triggers.First() + "s").SnPl(value.IsInteger() ? (int)value : 2), res, (targetUnit.Triggers.First() + "s").SnPl(res.IsInteger() ? (int)res : 2)));
+                await Context.Channel.SendMessageAsync(string.Format("{0} {1} is equal to {2} {3}", value, (originUnit.Triggers.First() + "s").SnPl(value.IsInteger() ? (int)value : 2), res, (targetUnit.Triggers.First() + "s").SnPl(res.IsInteger() ? (int)res : 2)));
             }
         }
 

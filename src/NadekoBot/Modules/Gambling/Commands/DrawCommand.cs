@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using ImageProcessorCore;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
@@ -16,7 +17,7 @@ namespace NadekoBot.Modules.Gambling
     public partial class Gambling
     {
         [Group]
-        public class DrawCommands
+        public class DrawCommands : ModuleBase
         {
             private static readonly ConcurrentDictionary<IGuild, Cards> AllDecks = new ConcurrentDictionary<IGuild, Cards>();
 
@@ -31,9 +32,10 @@ namespace NadekoBot.Modules.Gambling
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Draw(IUserMessage msg, int num = 1)
+            public async Task Draw(int num = 1)
             {
-                var channel = (ITextChannel)msg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 var cards = AllDecks.GetOrAdd(channel.Guild, (s) => new Cards());
                 var images = new List<Image>();
                 var cardObjects = new List<Cards.Card>();
@@ -54,7 +56,7 @@ namespace NadekoBot.Modules.Gambling
                 images.Merge().SaveAsPng(bitmapStream);
                 bitmapStream.Position = 0;
                 //todo CARD NAMES?
-                var toSend = $"{msg.Author.Mention}";
+                var toSend = $"{Context.User.Mention}";
                 if (cardObjects.Count == 5)
                     toSend += $" drew `{Cards.GetHandValue(cardObjects)}`";
 
@@ -63,9 +65,9 @@ namespace NadekoBot.Modules.Gambling
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task ShuffleDeck(IUserMessage imsg)
+            public async Task ShuffleDeck()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 AllDecks.AddOrUpdate(channel.Guild,
                         (g) => new Cards(),

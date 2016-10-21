@@ -13,9 +13,9 @@ namespace NadekoBot.Modules.Searches
     {
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Translate(IUserMessage umsg, string langs, [Remainder] string text = null)
+        public async Task Translate(string langs, [Remainder] string text = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             try
             {
@@ -28,7 +28,7 @@ namespace NadekoBot.Modules.Searches
                 if (string.IsNullOrWhiteSpace(text))
                     return;
 
-                await umsg.Channel.TriggerTypingAsync().ConfigureAwait(false);
+                await Context.Channel.TriggerTypingAsync().ConfigureAwait(false);
                 string translation = await GoogleTranslator.Instance.Translate(text, from, to).ConfigureAwait(false);
                 await channel.SendMessageAsync(translation).ConfigureAwait(false);
             }
@@ -41,9 +41,9 @@ namespace NadekoBot.Modules.Searches
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Translangs(IUserMessage umsg)
+        public async Task Translangs()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             await channel.SendTableAsync(GoogleTranslator.Instance.Languages, str => $"{str,-15}", columns: 3);
         }

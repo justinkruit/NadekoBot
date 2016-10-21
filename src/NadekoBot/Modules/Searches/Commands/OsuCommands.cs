@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using Newtonsoft.Json.Linq;
@@ -17,19 +18,20 @@ namespace NadekoBot.Modules.Searches
     public partial class Searches
     {
         [Group]
-        public class OsuCommands
+        public class OsuCommands : ModuleBase
         {
-            private Logger _log;
+            private static Logger _log { get; }
 
-            public OsuCommands()
+            static OsuCommands()
             {
                 _log = LogManager.GetCurrentClassLogger();
             }
+
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Osu(IUserMessage umsg, string usr, [Remainder] string mode = null)
+            public async Task Osu(string usr, [Remainder] string mode = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (string.IsNullOrWhiteSpace(usr))
                     return;
@@ -61,9 +63,9 @@ namespace NadekoBot.Modules.Searches
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Osub(IUserMessage umsg, [Remainder] string map)
+            public async Task Osub([Remainder] string map)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (string.IsNullOrWhiteSpace(NadekoBot.Credentials.OsuApiKey))
                 {
@@ -98,9 +100,9 @@ namespace NadekoBot.Modules.Searches
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Osu5(IUserMessage umsg, string user, [Remainder] string mode = null)
+            public async Task Osu5(string user, [Remainder] string mode = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
                 if (string.IsNullOrWhiteSpace(NadekoBot.Credentials.OsuApiKey))
                 {
                     await channel.SendMessageAsync("💢 An osu! API key is required.").ConfigureAwait(false);

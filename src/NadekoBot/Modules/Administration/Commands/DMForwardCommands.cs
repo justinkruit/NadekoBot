@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Services;
 using NadekoBot.Services.Database;
@@ -13,8 +14,7 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class DMForwardCommands
+        public class DMForwardCommands : ModuleBase
         {
             private static bool ForwardDMs { get; set; }
             private static bool ForwardDMsToAllOwners { get; set; }
@@ -31,9 +31,9 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
-            public async Task ForwardMessages(IUserMessage imsg)
+            public async Task ForwardMessages()
             {
-                var channel = imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 using (var uow = DbHandler.UnitOfWork())
                 {
@@ -49,9 +49,9 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
-            public async Task ForwardToAll(IUserMessage imsg)
+            public async Task ForwardToAll()
             {
-                var channel = imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 using (var uow = DbHandler.UnitOfWork())
                 {

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
@@ -24,10 +25,10 @@ namespace NadekoBot.Modules.Permissions
         }
 
         [Group]
-        public class CmdCdsCommands
+        public class CmdCdsCommands : ModuleBase
         {
             public static ConcurrentDictionary<ulong, ConcurrentHashSet<CommandCooldown>> commandCooldowns { get; }
-            private static ConcurrentDictionary<ulong, ConcurrentHashSet<ActiveCooldown>> activeCooldowns = new ConcurrentDictionary<ulong, ConcurrentHashSet<ActiveCooldown>>();
+            private static ConcurrentDictionary<ulong, ConcurrentHashSet<ActiveCooldown>> activeCooldowns { get; } = new ConcurrentDictionary<ulong, ConcurrentHashSet<ActiveCooldown>>();
 
             static CmdCdsCommands()
             {
@@ -39,9 +40,10 @@ namespace NadekoBot.Modules.Permissions
             }
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task CmdCooldown(IUserMessage imsg, Command command, int secs)
+            public async Task CmdCooldown(CommandInfo command, int secs)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 if (secs < 0 || secs > 3600)
                 {
                     await channel.SendMessageAsync("Invalid second parameter. (Must be a number between 0 and 3600)").ConfigureAwait(false);
@@ -79,9 +81,9 @@ namespace NadekoBot.Modules.Permissions
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task AllCmdCooldowns(IUserMessage imsg)
+            public async Task AllCmdCooldowns()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
                 var localSet = commandCooldowns.GetOrAdd(channel.Guild.Id, new ConcurrentHashSet<CommandCooldown>());
 
                 if (!localSet.Any())
@@ -90,7 +92,7 @@ namespace NadekoBot.Modules.Permissions
                     await channel.SendTableAsync("", localSet.Select(c => c.CommandName + ": " + c.Seconds + " secs"), s => $"{s,-30}", 2).ConfigureAwait(false);
             }
 
-            public static bool HasCooldown(Command cmd, IGuild guild, IUser user)
+            public static bool HasCooldown(CommandInfo cmd, SocketGuild guild, IUser user)
             {
                 if (guild == null)
                     return false;

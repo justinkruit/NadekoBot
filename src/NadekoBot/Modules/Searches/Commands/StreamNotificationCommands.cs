@@ -13,6 +13,7 @@ using NadekoBot.Services.Database.Models;
 using System.Net.Http;
 using Discord.WebSocket;
 using NadekoBot.Attributes;
+using NadekoBot.Extensions;
 
 namespace NadekoBot.Modules.Searches
 {
@@ -32,14 +33,14 @@ namespace NadekoBot.Modules.Searches
             public string Views { get; set; }
         }
         [Group]
-        public class StreamNotificationCommands
+        public class StreamNotificationCommands : ModuleBase
         {
-            private Timer checkTimer { get; }
-            private ConcurrentDictionary<string, StreamStatus> oldCachedStatuses = new ConcurrentDictionary<string, StreamStatus>();
-            private ConcurrentDictionary<string, StreamStatus> cachedStatuses = new ConcurrentDictionary<string, StreamStatus>();
-            private bool FirstPass { get; set; } = true;
+            private static Timer checkTimer { get; }
+            private static ConcurrentDictionary<string, StreamStatus> oldCachedStatuses = new ConcurrentDictionary<string, StreamStatus>();
+            private static ConcurrentDictionary<string, StreamStatus> cachedStatuses = new ConcurrentDictionary<string, StreamStatus>();
+            private static bool FirstPass { get; set; } = true;
 
-            public StreamNotificationCommands()
+            static StreamNotificationCommands()
             {
                 checkTimer = new Timer(async (state) =>
                 {
@@ -96,7 +97,7 @@ namespace NadekoBot.Modules.Searches
                 }, null, TimeSpan.Zero, TimeSpan.FromSeconds(60));
             }
 
-            private async Task<StreamStatus> GetStreamStatus(FollowedStream stream, bool checkCache = true)
+            private static async Task<StreamStatus> GetStreamStatus(FollowedStream stream, bool checkCache = true)
             {
                 bool isLive;
                 string response;
@@ -152,29 +153,29 @@ namespace NadekoBot.Modules.Searches
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task Hitbox(IUserMessage msg, [Remainder] string username) =>
-                await TrackStream((ITextChannel)msg.Channel, username, FollowedStream.FollowedStreamType.Hitbox)
+            public async Task Hitbox([Remainder] string username) =>
+                await TrackStream((SocketTextChannel)Context.Channel, username, FollowedStream.FollowedStreamType.Hitbox)
                     .ConfigureAwait(false);
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task Twitch(IUserMessage msg, [Remainder] string username) =>
-                await TrackStream((ITextChannel)msg.Channel, username, FollowedStream.FollowedStreamType.Twitch)
+            public async Task Twitch([Remainder] string username) =>
+                await TrackStream((SocketTextChannel)Context.Channel, username, FollowedStream.FollowedStreamType.Twitch)
                     .ConfigureAwait(false);
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task Beam(IUserMessage msg, [Remainder] string username) =>
-                await TrackStream((ITextChannel)msg.Channel, username, FollowedStream.FollowedStreamType.Beam)
+            public async Task Beam([Remainder] string username) =>
+                await TrackStream((SocketTextChannel)Context.Channel, username, FollowedStream.FollowedStreamType.Beam)
                     .ConfigureAwait(false);
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task ListStreams(IUserMessage imsg)
+            public async Task ListStreams()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 IEnumerable<FollowedStream> streams;
                 using (var uow = DbHandler.UnitOfWork())
@@ -199,9 +200,9 @@ namespace NadekoBot.Modules.Searches
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task RemoveStream(IUserMessage msg, [Remainder] string username)
+            public async Task RemoveStream([Remainder] string username)
             {
-                var channel = (ITextChannel)msg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 username = username.ToLowerInvariant().Trim();
 
@@ -227,9 +228,9 @@ namespace NadekoBot.Modules.Searches
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task CheckStream(IUserMessage imsg, FollowedStream.FollowedStreamType platform, [Remainder] string username)
+            public async Task CheckStream(FollowedStream.FollowedStreamType platform, [Remainder] string username)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 var stream = username?.Trim();
                 if (string.IsNullOrWhiteSpace(stream))
@@ -256,7 +257,7 @@ namespace NadekoBot.Modules.Searches
                 }
             }
 
-            private async Task TrackStream(ITextChannel channel, string username, FollowedStream.FollowedStreamType type)
+            private async Task TrackStream(SocketTextChannel channel, string username, FollowedStream.FollowedStreamType type)
             {
                 username = username.ToLowerInvariant().Trim();
                 var stream = new FollowedStream

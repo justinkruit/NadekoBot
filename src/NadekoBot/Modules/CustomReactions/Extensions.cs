@@ -14,12 +14,12 @@ namespace NadekoBot.Modules.CustomReactions
     {
         public static Dictionary<string, Func<IUserMessage, string, string>> responsePlaceholders = new Dictionary<string, Func<IUserMessage, string, string>>()
         {
-            {"%target%", (ctx, trigger) => { return ctx.Content.ToLowerInvariant().Substring(trigger.Length); } }
+            {"%target%", (ctx, trigger) => { return ctx.Content.ToLowerInvariant().Substring(trigger.Length).Trim(); } }
         };
 
         public static Dictionary<string, Func<IUserMessage, string>> placeholders = new Dictionary<string, Func<IUserMessage, string>>()
         {
-            {"%mention%", (ctx) => { return $"<@{NadekoBot.Client.GetCurrentUser().Id}>"; } },
+            {"%mention%", (ctx) => { return $"<@{NadekoBot.Client.CurrentUser.Id}>"; } },
             {"%user%", (ctx) => { return ctx.Author.Mention; } },
             {"%rng%", (ctx) => { return new NadekoRandom().Next(0,10).ToString(); } }
         };

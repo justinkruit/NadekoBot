@@ -15,10 +15,13 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class CrossServerTextChannel
+        public class CrossServerTextChannel : ModuleBase
         {
-            public CrossServerTextChannel()
+
+            public static readonly ConcurrentDictionary<int, ConcurrentHashSet<SocketTextChannel>> Subscribers = new ConcurrentDictionary<int, ConcurrentHashSet<SocketTextChannel>>();
+            private static Logger _log { get; }
+
+            static CrossServerTextChannel()
             {
                 _log = LogManager.GetCurrentClassLogger();
                 NadekoBot.Client.MessageReceived += (imsg) =>
@@ -26,17 +29,17 @@ namespace NadekoBot.Modules.Administration
                     if (imsg.Author.IsBot)
                         return Task.CompletedTask;
 
-                    var msg = imsg as IUserMessage;
+                    var msg = imsg as SocketUserMessage;
                     if (msg == null)
                         return Task.CompletedTask;
 
-                    var channel = imsg.Channel as ITextChannel;
+                    var channel = msg.Channel as SocketTextChannel;
                     if (channel == null)
                         return Task.CompletedTask;
 
                     Task.Run(async () =>
                     {
-                            if (msg.Author.Id == NadekoBot.Client.GetCurrentUser().Id) return;
+                            if (msg.Author.Id == NadekoBot.Client.CurrentUser.Id) return;
                             foreach (var subscriber in Subscribers)
                             {
                                 var set = subscriber.Value;
@@ -52,35 +55,33 @@ namespace NadekoBot.Modules.Administration
                 };
             }
 
-            private string GetText(IGuild server, ITextChannel channel, IGuildUser user, IUserMessage message) =>
+            private static string GetText(SocketGuild server, ITextChannel channel, IGuildUser user, IUserMessage message) =>
                 $"**{server.Name} | {channel.Name}** `{user.Username}`: " + message.Content;
-            
-            public static readonly ConcurrentDictionary<int, ConcurrentHashSet<ITextChannel>> Subscribers = new ConcurrentDictionary<int, ConcurrentHashSet<ITextChannel>>();
-            private Logger _log { get; }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [OwnerOnly]
-            public async Task Scsc(IUserMessage msg)
+            public async Task Scsc()
             {
-                var channel = (ITextChannel)msg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 var token = new NadekoRandom().Next();
-                var set = new ConcurrentHashSet<ITextChannel>();
+                var set = new ConcurrentHashSet<SocketTextChannel>();
                 if (Subscribers.TryAdd(token, set))
                 {
                     set.Add(channel);
-                    await ((IGuildUser)msg.Author).SendMessageAsync("This is your CSC token:" + token.ToString()).ConfigureAwait(false);
+                    await ((SocketGuildUser)Context.Message.Author).SendMessageAsync("This is your CSC token:" + token.ToString()).ConfigureAwait(false);
                 }
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task Jcsc(IUserMessage imsg, int token)
+            public async Task Jcsc(int token)
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
-                ConcurrentHashSet<ITextChannel> set;
+                ConcurrentHashSet<SocketTextChannel> set;
                 if (!Subscribers.TryGetValue(token, out set))
                     return;
                 set.Add(channel);
@@ -90,9 +91,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageGuild)]
-            public async Task Lcsc(IUserMessage imsg)
+            public async Task Lcsc()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 foreach (var subscriber in Subscribers)
                 {

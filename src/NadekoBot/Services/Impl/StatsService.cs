@@ -29,21 +29,21 @@ namespace NadekoBot.Services.Impl
 
             Reset();
             this.client.MessageReceived += _ => Task.FromResult(messageCounter++);
-            cmdHandler.CommandExecuted += (_, e) => commandsRan++;
+            cmdHandler.CommandExecuted += (_, e) => Task.FromResult(commandsRan++);
 
             this.client.Disconnected += _ => Reset();
         }
-        public async Task<string> Print()
+        public Task<string> Print()
         {
-            var curUser = await client.GetCurrentUserAsync();
-            return $@"`Author: Kwoth` `Library: Discord.Net`
+            var curUser = client.CurrentUser;
+            return Task.FromResult($@"`Author: Kwoth` `Library: Discord.Net`
 `Bot Version: {BotVersion}`
 `Bot id: {curUser.Id}`
 `Owners' Ids: {string.Join(", ", NadekoBot.Credentials.OwnerIds)}`
 `Uptime: {GetUptimeString()}`
-`Servers: {client.GetGuilds().Count} | TextChannels: {client.GetGuilds().SelectMany(g => g.GetChannels().Where(c => c is ITextChannel)).Count()} | VoiceChannels: {client.GetGuilds().SelectMany(g => g.GetChannels().Where(c => c is IVoiceChannel)).Count()}`
+`Servers: {client.Guilds.Count} | TextChannels: {client.Guilds.SelectMany(g => g.Channels.Where(c => c is ITextChannel)).Count()} | VoiceChannels: {client.Guilds.SelectMany(g => g.Channels.Where(c => c is IVoiceChannel)).Count()}`
 `Commands Ran this session: {commandsRan}`
-`Messages: {messageCounter} ({messageCounter / (double)GetUptime().TotalSeconds:F2}/sec)` `Heap: {Heap} MB`";
+`Messages: {messageCounter} ({messageCounter / (double)GetUptime().TotalSeconds:F2}/sec)` `Heap: {Heap} MB`");
         }
 
         public Task Reset()

@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
@@ -15,109 +16,112 @@ namespace NadekoBot.Modules.Utility
 {
     public partial class Utility
     {
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task ShowQuote(IUserMessage umsg, [Remainder] string keyword)
+        public class QuoteCommands : ModuleBase
         {
-            var channel = (ITextChannel)umsg.Channel;
-
-            if (string.IsNullOrWhiteSpace(keyword))
-                return;
-
-            keyword = keyword.ToUpperInvariant();
-
-            Quote quote;
-            using (var uow = DbHandler.Instance.GetUnitOfWork())
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            public async Task ShowQuote([Remainder] string keyword)
             {
-                quote = await uow.Quotes.GetRandomQuoteByKeywordAsync(channel.Guild.Id, keyword).ConfigureAwait(false);
-            }
+                var channel = (SocketTextChannel)Context.Channel;
 
-            if (quote == null)
-                return;
-
-            await channel.SendMessageAsync("📣 " + quote.Text.SanitizeMentions());
-        }
-
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task AddQuote(IUserMessage umsg, string keyword, [Remainder] string text)
-        {
-            var channel = (ITextChannel)umsg.Channel;
-
-            if (string.IsNullOrWhiteSpace(keyword) || string.IsNullOrWhiteSpace(text))
-                return;
-
-            keyword = keyword.ToUpperInvariant();
-
-            using (var uow = DbHandler.UnitOfWork())
-            {
-                uow.Quotes.Add(new Quote
-                {
-                    AuthorId = umsg.Author.Id,
-                    AuthorName = umsg.Author.Username,
-                    GuildId = channel.Guild.Id,
-                    Keyword = keyword,
-                    Text = text,
-                });
-                await uow.CompleteAsync().ConfigureAwait(false);
-            }
-            await channel.SendMessageAsync("`Quote added.`").ConfigureAwait(false);
-        }
-
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task DeleteQuote(IUserMessage umsg, [Remainder] string keyword)
-        {
-            var channel = (ITextChannel)umsg.Channel;
-
-            if (string.IsNullOrWhiteSpace(keyword))
-                return;
-
-            var isAdmin = ((IGuildUser)umsg.Author).GuildPermissions.Administrator;
-
-            keyword = keyword.ToUpperInvariant();
-            string response;
-            using (var uow = DbHandler.UnitOfWork())
-            {
-                var qs = uow.Quotes.GetAllQuotesByKeyword(channel.Guild.Id, keyword);
-
-                if (qs==null || !qs.Any())
-                {
-                    response = "`No quotes found.`";
+                if (string.IsNullOrWhiteSpace(keyword))
                     return;
+
+                keyword = keyword.ToUpperInvariant();
+
+                Quote quote;
+                using (var uow = DbHandler.Instance.GetUnitOfWork())
+                {
+                    quote = await uow.Quotes.GetRandomQuoteByKeywordAsync(channel.Guild.Id, keyword).ConfigureAwait(false);
                 }
 
-                var q = qs.Shuffle().FirstOrDefault(elem => isAdmin || elem.AuthorId == umsg.Author.Id);
+                if (quote == null)
+                    return;
 
-                uow.Quotes.Remove(q);
-                await uow.CompleteAsync().ConfigureAwait(false);
-                response = "`Deleted a random quote`";
+                await channel.SendMessageAsync("📣 " + quote.Text.SanitizeMentions());
             }
-            await channel.SendMessageAsync(response);
-        }
 
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        [RequirePermission(GuildPermission.Administrator)]
-        public async Task DelAllQuotes(IUserMessage umsg, [Remainder] string keyword)
-        {
-            var channel = (ITextChannel)umsg.Channel;
-
-            if (string.IsNullOrWhiteSpace(keyword))
-                return;
-
-            keyword = keyword.ToUpperInvariant();
-
-            using (var uow = DbHandler.UnitOfWork())
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            public async Task AddQuote(string keyword, [Remainder] string text)
             {
-                var quotes = uow.Quotes.GetAllQuotesByKeyword(channel.Guild.Id, keyword);
+                var channel = (SocketTextChannel)Context.Channel;
 
-                uow.Quotes.RemoveRange(quotes.ToArray());//wtf?!
+                if (string.IsNullOrWhiteSpace(keyword) || string.IsNullOrWhiteSpace(text))
+                    return;
 
-                await uow.CompleteAsync();
+                keyword = keyword.ToUpperInvariant();
+
+                using (var uow = DbHandler.UnitOfWork())
+                {
+                    uow.Quotes.Add(new Quote
+                    {
+                        AuthorId = Context.User.Id,
+                        AuthorName = Context.User.Username,
+                        GuildId = channel.Guild.Id,
+                        Keyword = keyword,
+                        Text = text,
+                    });
+                    await uow.CompleteAsync().ConfigureAwait(false);
+                }
+                await channel.SendMessageAsync("`Quote added.`").ConfigureAwait(false);
             }
 
-            await channel.SendMessageAsync($"`Deleted all quotes with '{keyword}' keyword`");
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            public async Task DeleteQuote([Remainder] string keyword)
+            {
+                var channel = (SocketTextChannel)Context.Channel;
+
+                if (string.IsNullOrWhiteSpace(keyword))
+                    return;
+
+                var isAdmin = ((IGuildUser)Context.User).GuildPermissions.Administrator;
+
+                keyword = keyword.ToUpperInvariant();
+                string response;
+                using (var uow = DbHandler.UnitOfWork())
+                {
+                    var qs = uow.Quotes.GetAllQuotesByKeyword(channel.Guild.Id, keyword);
+
+                    if (qs == null || !qs.Any())
+                    {
+                        response = "`No quotes found.`";
+                        return;
+                    }
+
+                    var q = qs.Shuffle().FirstOrDefault(elem => isAdmin || elem.AuthorId == Context.User.Id);
+
+                    uow.Quotes.Remove(q);
+                    await uow.CompleteAsync().ConfigureAwait(false);
+                    response = "`Deleted a random quote`";
+                }
+                await channel.SendMessageAsync(response);
+            }
+
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            [RequirePermission(GuildPermission.Administrator)]
+            public async Task DelAllQuotes([Remainder] string keyword)
+            {
+                var channel = (SocketTextChannel)Context.Channel;
+
+                if (string.IsNullOrWhiteSpace(keyword))
+                    return;
+
+                keyword = keyword.ToUpperInvariant();
+
+                using (var uow = DbHandler.UnitOfWork())
+                {
+                    var quotes = uow.Quotes.GetAllQuotesByKeyword(channel.Guild.Id, keyword);
+
+                    uow.Quotes.RemoveRange(quotes.ToArray());//wtf?!
+
+                    await uow.CompleteAsync();
+                }
+
+                await channel.SendMessageAsync($"`Deleted all quotes with '{keyword}' keyword`");
+            }
         }
     }
 }

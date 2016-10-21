@@ -15,13 +15,13 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class VoicePlusTextCommands
+        public class VoicePlusTextCommands : ModuleBase
         {
-            Regex channelNameRegex = new Regex(@"[^a-zA-Z0-9 -]", RegexOptions.Compiled);
+            private static Regex channelNameRegex { get; } = new Regex(@"[^a-zA-Z0-9 -]", RegexOptions.Compiled);
             
-            private ConcurrentHashSet<ulong> voicePlusTextCache;
-            public VoicePlusTextCommands()
+            private static ConcurrentHashSet<ulong> voicePlusTextCache { get; }
+
+            static VoicePlusTextCommands()
             {
                 using (var uow = DbHandler.UnitOfWork())
                 {
@@ -30,16 +30,16 @@ namespace NadekoBot.Modules.Administration
                 NadekoBot.Client.UserVoiceStateUpdated += UserUpdatedEventHandler;
             }
 
-            private Task UserUpdatedEventHandler(IUser iuser, IVoiceState before, IVoiceState after)
+            private static Task UserUpdatedEventHandler(SocketUser iuser, SocketVoiceState before, SocketVoiceState after)
             {
-                var user = (iuser as IGuildUser);
+                var user = (iuser as SocketGuildUser);
                 var guild = user?.Guild;
 
                 if (guild == null)
                     return Task.CompletedTask;
                 var task = Task.Run(async () =>
                 {
-                    var botUserPerms = guild.GetCurrentUser().GuildPermissions;
+                    var botUserPerms = guild.CurrentUser.GuildPermissions;
                     try
                     {
                         if (before.VoiceChannel == after.VoiceChannel) return;
@@ -78,7 +78,7 @@ namespace NadekoBot.Modules.Administration
                         var afterVch = after.VoiceChannel;
                         if (afterVch != null && guild.AFKChannelId != afterVch.Id)
                         {
-                            var textChannel = guild.GetTextChannels()
+                            ITextChannel textChannel = guild.GetTextChannels()
                                                         .Where(t => t.Name ==  GetChannelName(afterVch.Name))
                                                         .FirstOrDefault();
                             if (textChannel == null)
@@ -101,19 +101,19 @@ namespace NadekoBot.Modules.Administration
                 return Task.CompletedTask;
             }
 
-            private string GetChannelName(string voiceName) =>
+            private static string GetChannelName(string voiceName) =>
                 channelNameRegex.Replace(voiceName, "").Trim().Replace(" ", "-").TrimTo(90, true) + "-voice";
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageRoles)]
             [RequirePermission(GuildPermission.ManageChannels)]
-            public async Task VoicePlusText(IUserMessage msg)
+            public async Task VoicePlusText()
             {
-                var channel = (ITextChannel)msg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
                 var guild = channel.Guild;
 
-                var botUser = guild.GetCurrentUser();
+                var botUser = guild.CurrentUser;
                 if (!botUser.GuildPermissions.ManageRoles || !botUser.GuildPermissions.ManageChannels)
                 {
                     await channel.SendMessageAsync(":anger: `I require manage roles and manage channels permissions to enable this feature.`");
@@ -146,15 +146,17 @@ namespace NadekoBot.Modules.Administration
                     await channel.SendMessageAsync(ex.ToString()).ConfigureAwait(false);
                 }
             }
+
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageChannels)]
             [RequirePermission(GuildPermission.ManageRoles)]
-            public async Task CleanVPlusT(IUserMessage msg)
+            public async Task CleanVPlusT()
             {
-                var channel = (ITextChannel)msg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
+
                 var guild = channel.Guild;
-                if (!guild.GetCurrentUser().GuildPermissions.ManageChannels)
+                if (!guild.CurrentUser.GuildPermissions.ManageChannels)
                 {
                     await channel.SendMessageAsync("`I have insufficient permission to do that.`").ConfigureAwait(false);
                     return;

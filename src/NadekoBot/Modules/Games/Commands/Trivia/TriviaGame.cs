@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Net;
+using Discord.WebSocket;
 using NadekoBot.Extensions;
 using NLog;
 using System;
@@ -17,7 +18,7 @@ namespace NadekoBot.Modules.Games.Trivia
         private readonly SemaphoreSlim _guessLock = new SemaphoreSlim(1, 1);
         private Logger _log { get; }
 
-        public IGuild guild { get; }
+        public SocketGuild guild { get; }
         public ITextChannel channel { get; }
 
         private int QuestionDurationMiliseconds { get; } = 30000;
@@ -35,7 +36,7 @@ namespace NadekoBot.Modules.Games.Trivia
 
         public int WinRequirement { get; } = 10;
 
-        public TriviaGame(IGuild guild, ITextChannel channel, bool showHints, int winReq = 10)
+        public TriviaGame(SocketGuild guild, ITextChannel channel, bool showHints, int winReq = 10)
         {
             _log = LogManager.GetCurrentClassLogger();
             ShowHints = showHints;
@@ -127,7 +128,7 @@ namespace NadekoBot.Modules.Games.Trivia
                 {
                     if (!(umsg.Channel is IGuildChannel && umsg.Channel is ITextChannel)) return;
                     if ((umsg.Channel as ITextChannel).Guild != guild) return;
-                    if (umsg.Author.Id == NadekoBot.Client.GetCurrentUser().Id) return;
+                    if (umsg.Author.Id == NadekoBot.Client.CurrentUser.Id) return;
 
                     var guildUser = umsg.Author as IGuildUser;
 

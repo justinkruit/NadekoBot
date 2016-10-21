@@ -16,28 +16,28 @@ using System.Collections.Concurrent;
 using NadekoBot.Extensions;
 using NadekoBot.Services.Database;
 using Microsoft.Data.Sqlite;
+using Discord.WebSocket;
 
 namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class Migration
+        public class Migration : ModuleBase
         {
             private const int CURRENT_VERSION = 1;
 
-            private Logger _log { get; }
+            private static Logger _log { get; }
 
-            public Migration()
+            static Migration()
             {
                 _log = LogManager.GetCurrentClassLogger();
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [OwnerOnly]
-            public async Task MigrateData(IUserMessage umsg)
+            public async Task MigrateData()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 var version = 0;
                 using (var uow = DbHandler.UnitOfWork())
@@ -55,12 +55,12 @@ namespace NadekoBot.Modules.Administration
                                 break;
                         }
                     }
-                    await umsg.Channel.SendMessageAsync("Migration done.").ConfigureAwait(false);
+                    await channel.SendMessageAsync("Migration done.").ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {
                     _log.Error(ex);
-                    await umsg.Channel.SendMessageAsync(":warning: Error while migrating, check logs for more informations.").ConfigureAwait(false);
+                    await channel.SendMessageAsync(":warning: Error while migrating, check logs for more informations.").ConfigureAwait(false);
                 }
             }
 

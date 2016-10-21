@@ -1,7 +1,9 @@
 ﻿using Discord;
 using Discord.Commands;
 using Discord.Net;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
+using NadekoBot.Extensions;
 using NadekoBot.Services;
 using NadekoBot.Services.Database;
 using NadekoBot.Services.Database.Models;
@@ -16,16 +18,14 @@ namespace NadekoBot.Modules.Administration
 {
     public partial class Administration
     {
-        [Group]
-        public class SelfAssignedRolesCommands
+        public class SelfAssignedRolesCommands : ModuleBase
         {
-
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageMessages)]
-            public async Task AdSarm(IUserMessage imsg)
+            public async Task AdSarm()
             {
-                var channel = (ITextChannel)imsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
                 bool newval;
                 using (var uow = DbHandler.UnitOfWork())
                 {
@@ -41,9 +41,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageRoles)]
-            public async Task Asar(IUserMessage umsg, [Remainder] IRole role)
+            public async Task Asar([Remainder] IRole role)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 IEnumerable<SelfAssignedRole> roles;
 
@@ -51,7 +51,7 @@ namespace NadekoBot.Modules.Administration
                 using (var uow = DbHandler.UnitOfWork())
                 {
                     roles = uow.SelfAssignedRoles.GetFromGuild(channel.Guild.Id);
-                    if (roles.Any(s => s.RoleId == role.Id && s.GuildId == role.GuildId))
+                    if (roles.Any(s => s.RoleId == role.Id && s.GuildId == role.Guild.Id))
                     {
                         msg = $":anger:Role **{role.Name}** is already in the list.";
                     }
@@ -59,7 +59,7 @@ namespace NadekoBot.Modules.Administration
                     {
                         uow.SelfAssignedRoles.Add(new SelfAssignedRole {
                             RoleId = role.Id,
-                            GuildId = role.GuildId
+                            GuildId = role.Guild.Id
                         });
                         await uow.CompleteAsync();
                         msg = $":ok:Role **{role.Name}** added to the list.";
@@ -71,14 +71,13 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageRoles)]
-            public async Task Rsar(IUserMessage umsg, [Remainder] IRole role)
+            public async Task Rsar([Remainder] IRole role)
             {
-                var channel = (ITextChannel)umsg.Channel;
-
+                var channel = (SocketTextChannel)Context.Channel;
                 bool success;
                 using (var uow = DbHandler.UnitOfWork())
                 {
-                    success = uow.SelfAssignedRoles.DeleteByGuildAndRoleId(role.GuildId, role.Id);
+                    success = uow.SelfAssignedRoles.DeleteByGuildAndRoleId(role.Guild.Id, role.Id);
                     await uow.CompleteAsync();
                 }
                 if (!success)
@@ -91,9 +90,9 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Lsar(IUserMessage umsg)
+            public async Task Lsar()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 var toRemove = new ConcurrentHashSet<SelfAssignedRole>();
                 var removeMsg = new StringBuilder();
@@ -127,9 +126,9 @@ namespace NadekoBot.Modules.Administration
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [RequirePermission(GuildPermission.ManageRoles)]
-            public async Task Tesar(IUserMessage umsg)
+            public async Task Tesar()
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 bool areExclusive;
                 using (var uow = DbHandler.UnitOfWork())
@@ -145,11 +144,11 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Iam(IUserMessage umsg, [Remainder] IRole role)
+            public async Task Iam([Remainder] IRole role)
             {
-                var channel = (ITextChannel)umsg.Channel;
-                var guildUser = (IGuildUser)umsg.Author;
-                var usrMsg = (IUserMessage)umsg;
+                var channel = (SocketTextChannel)Context.Channel;
+                var guildUser = (SocketGuildUser)Context.Message.Author;
+                var usrMsg = (SocketUserMessage)Context.Message;
 
                 GuildConfig conf;
                 IEnumerable<SelfAssignedRole> roles;
@@ -164,7 +163,7 @@ namespace NadekoBot.Modules.Administration
                     await channel.SendMessageAsync(":anger:That role is not self-assignable.").ConfigureAwait(false);
                     return;
                 }
-                if (guildUser.Roles.Contains(role))
+                if (guildUser.GetRoles().Contains(role))
                 {
                     await channel.SendMessageAsync($":anger:You already have {role.Name} role.").ConfigureAwait(false);
                     return;
@@ -172,7 +171,7 @@ namespace NadekoBot.Modules.Administration
 
                 if (conf.ExclusiveSelfAssignedRoles)
                 {
-                    var sameRoles = guildUser.Roles.Where(r => roles.Any(rm => rm.RoleId == r.Id));
+                    var sameRoles = guildUser.GetRoles().Where(r => roles.Any(rm => rm.RoleId == r.Id));
                     if (sameRoles.Any())
                     {
                         await channel.SendMessageAsync($":anger:You already have {sameRoles.FirstOrDefault().Name} exclusive self-assigned role.").ConfigureAwait(false);
@@ -203,10 +202,10 @@ namespace NadekoBot.Modules.Administration
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Iamnot(IUserMessage umsg, [Remainder] IRole role)
+            public async Task Iamnot([Remainder] IRole role)
             {
-                var channel = (ITextChannel)umsg.Channel;
-                var guildUser = (IGuildUser)umsg.Author;
+                var channel = (SocketTextChannel)Context.Channel;
+                var guildUser = (SocketGuildUser)Context.Message.Author;
 
                 GuildConfig conf;
                 IEnumerable<SelfAssignedRole> roles;
@@ -221,7 +220,7 @@ namespace NadekoBot.Modules.Administration
                     await channel.SendMessageAsync(":anger:That role is not self-assignable.").ConfigureAwait(false);
                     return;
                 }
-                if (!guildUser.Roles.Contains(role))
+                if (!guildUser.GetRoles().Contains(role))
                 {
                     await channel.SendMessageAsync($":anger:You don't have {role.Name} role.").ConfigureAwait(false);
                     return;
@@ -243,7 +242,7 @@ namespace NadekoBot.Modules.Administration
                     {
                         await Task.Delay(3000).ConfigureAwait(false);
                         try { await msg.DeleteAsync().ConfigureAwait(false); } catch { } // if 502 or something, i don't want bot crashing
-                        try { await umsg.DeleteAsync().ConfigureAwait(false); } catch { }
+                        try { await Context.Message.DeleteAsync().ConfigureAwait(false); } catch { }
                     });
                 }
             }

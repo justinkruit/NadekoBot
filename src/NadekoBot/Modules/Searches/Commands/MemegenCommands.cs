@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using NadekoBot.Attributes;
 using System.Net.Http;
 using NadekoBot.Extensions;
+using Discord.WebSocket;
 
 namespace NadekoBot.Modules.Searches
 {
@@ -17,9 +18,9 @@ namespace NadekoBot.Modules.Searches
     {
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Memelist(IUserMessage umsg)
+        public async Task Memelist()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
             HttpClientHandler handler = new HttpClientHandler();
 
             handler.AllowAutoRedirect = false;
@@ -45,9 +46,9 @@ namespace NadekoBot.Modules.Searches
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Memegen(IUserMessage umsg, string meme, string topText, string botText)
+        public async Task Memegen(string meme, string topText, string botText)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             var top = Uri.EscapeDataString(topText.Replace(' ', '-'));
             var bot = Uri.EscapeDataString(botText.Replace(' ', '-'));

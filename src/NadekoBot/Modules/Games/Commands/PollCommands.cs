@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using System;
 using System.Collections.Concurrent;
@@ -12,15 +13,15 @@ namespace NadekoBot.Modules.Games
 {
     public partial class Games
     {
-        public static ConcurrentDictionary<IGuild, Poll> ActivePolls = new ConcurrentDictionary<IGuild, Poll>();
+        public static ConcurrentDictionary<IGuild, Poll> ActivePolls { get; } = new ConcurrentDictionary<IGuild, Poll>();
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Poll(IUserMessage umsg, [Remainder] string arg = null)
+        public async Task Poll([Remainder] string arg = null)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketGuildChannel)Context.Channel;
 
-            if (!(umsg.Author as IGuildUser).GuildPermissions.ManageChannels)
+            if (!(Context.User as IGuildUser).GuildPermissions.ManageChannels)
                 return;
             if (string.IsNullOrWhiteSpace(arg) || !arg.Contains(";"))
                 return;
@@ -28,7 +29,7 @@ namespace NadekoBot.Modules.Games
             if (data.Length < 3)
                 return;
 
-            var poll = new Poll(umsg, data[0], data.Skip(1));
+            var poll = new Poll(Context.Message, data[0], data.Skip(1));
             if (ActivePolls.TryAdd(channel.Guild, poll))
             {
                 await poll.StartPoll().ConfigureAwait(false);
@@ -37,11 +38,11 @@ namespace NadekoBot.Modules.Games
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task Pollend(IUserMessage umsg)
+        public async Task Pollend()
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketGuildChannel)Context.Channel;
 
-            if (!(umsg.Author as IGuildUser).GuildPermissions.ManageChannels)
+            if (!(Context.User as IGuildUser).GuildPermissions.ManageChannels)
                 return;
             Poll poll;
             ActivePolls.TryGetValue(channel.Guild, out poll);
