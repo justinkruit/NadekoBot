@@ -20,12 +20,12 @@ namespace NadekoBot
         public event Func<SocketGuildUser, Task> UserJoined =  delegate { return Task.CompletedTask; };
         public event Func<SocketMessage, Task> MessageReceived = delegate { return Task.CompletedTask; };
         public event Func<SocketGuildUser, Task> UserLeft = delegate { return Task.CompletedTask; };
-        public event Func<SocketGuildUser, SocketGuildUser, Task> UserUpdated = delegate { return Task.CompletedTask; };
+        public event Func<SocketUser, SocketUser, Task> UserUpdated = delegate { return Task.CompletedTask; };
         public event Func<Optional<SocketMessage>, SocketMessage, Task> MessageUpdated = delegate { return Task.CompletedTask; };
         public event Func<ulong, Optional<SocketMessage>, Task> MessageDeleted = delegate { return Task.CompletedTask; };
         public event Func<SocketUser, SocketGuild, Task> UserBanned = delegate { return Task.CompletedTask; };
         public event Func<SocketGuildUser, SocketGuild, Task> UserUnbanned = delegate { return Task.CompletedTask; };
-        public event Func<SocketUser, SocketPresence, SocketPresence, Task> UserPresenceUpdated = delegate { return Task.CompletedTask; };
+        public event Func<Optional<SocketGuild>, SocketUser, SocketPresence, SocketPresence, Task> UserPresenceUpdated = delegate { return Task.CompletedTask; };
         public event Func<SocketUser, SocketVoiceState, SocketVoiceState, Task> UserVoiceStateUpdated = delegate { return Task.CompletedTask; };
         public event Func<SocketChannel, Task> ChannelCreated = delegate { return Task.CompletedTask; };
         public event Func<SocketChannel, Task> ChannelDestroyed = delegate { return Task.CompletedTask; };
@@ -53,7 +53,7 @@ namespace NadekoBot
                 client.MessageUpdated += async (arg1, m2) => await MessageUpdated(arg1, m2);
                 client.MessageDeleted += async (arg1, arg2) => await MessageDeleted(arg1, arg2);
                 client.UserBanned += async (arg1, arg2) => await UserBanned(arg1, arg2);
-                client.UserPresenceUpdated += async (arg1, arg2, arg3) => await UserPresenceUpdated(arg1, arg2, arg3);
+                client.UserPresenceUpdated += async (arg1, arg2, arg3, arg4) => await UserPresenceUpdated(arg1, arg2, arg3, arg4);
                 client.UserVoiceStateUpdated += async (arg1, arg2, arg3) => await UserVoiceStateUpdated(arg1, arg2, arg3);
                 client.ChannelCreated += async arg => await ChannelCreated(arg);
                 client.ChannelDestroyed += async arg => await ChannelDestroyed(arg);
