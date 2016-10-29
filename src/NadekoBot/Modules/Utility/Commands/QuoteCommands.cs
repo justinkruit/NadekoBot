@@ -16,13 +16,36 @@ namespace NadekoBot.Modules.Utility
 {
     public partial class Utility
     {
-        public class QuoteCommands : ModuleBase
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        public async Task ListQuotes(, int page = 1)
         {
-            [NadekoCommand, Usage, Description, Aliases]
-            [RequireContext(ContextType.Guild)]
-            public async Task ShowQuote([Remainder] string keyword)
+            var channel = Context.Channel;
+
+            page -= 1;
+
+            if (page < 0)
+                return;
+
+            IEnumerable<Quote> quotes;
+            using (var uow = DbHandler.UnitOfWork())
             {
-                var channel = (SocketTextChannel)Context.Channel;
+                quotes = uow.Quotes.GetGroup(page * 16, 16);
+            }
+
+            if (quotes.Any())
+                await channel.SendMessageAsync($"`Page {page + 1} of quotes:`\n```xl\n" + String.Join("\n", quotes.Select((q) => $"{q.Keyword,-20} by {q.AuthorName}")) + "\n```")
+                             .ConfigureAwait(false);
+            else
+                await channel.SendMessageAsync("`No quotes on this page.`").ConfigureAwait(false);
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        public async Task ShowQuote([Remainder] string keyword)
+        {
+            var channel = (SocketTextChannel)Context.Channel;
+            var channel = (ITextChannel)umsg.Channel;
 
                 if (string.IsNullOrWhiteSpace(keyword))
                     return;

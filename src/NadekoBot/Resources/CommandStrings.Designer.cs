@@ -519,7 +519,61 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to av avatar.
+        ///    Looks up a localized string similar to autotranslang atl.
+        /// </summary>
+        public static string autotranslang_cmd {
+            get {
+                return ResourceManager.GetString("autotranslang_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}atl en&gt;fr`.
+        /// </summary>
+        public static string autotranslang_desc {
+            get {
+                return ResourceManager.GetString("autotranslang_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Sets your source and target language to be used with `{0}at`. Specify no arguments to remove previously set value..
+        /// </summary>
+        public static string autotranslang_usage {
+            get {
+                return ResourceManager.GetString("autotranslang_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to autotrans at.
+        /// </summary>
+        public static string autotranslate_cmd {
+            get {
+                return ResourceManager.GetString("autotranslate_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Starts automatic translation of all messages by users who set their `{0}atl` in this channel. You can set &quot;del&quot; argument to automatically delete all translated user messages..
+        /// </summary>
+        public static string autotranslate_desc {
+            get {
+                return ResourceManager.GetString("autotranslate_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}at` or `{0}at del`.
+        /// </summary>
+        public static string autotranslate_usage {
+            get {
+                return ResourceManager.GetString("autotranslate_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to avatar av.
         /// </summary>
         public static string avatar_cmd {
             get {
@@ -555,7 +609,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Awards someone a certain amount of currency.  .
+        ///    Looks up a localized string similar to Awards someone a certain amount of currency.  You can also specify a role name to award currency to all users in a role..
         /// </summary>
         public static string award_desc {
             get {
@@ -564,7 +618,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to `{0}award 100 @person`.
+        ///    Looks up a localized string similar to `{0}award 100 @person` or `{0}award 5 Role Of Gamblers`.
         /// </summary>
         public static string award_usage {
             get {
@@ -1028,6 +1082,60 @@ namespace NadekoBot.Resources {
         public static string channeltopic_usage {
             get {
                 return ResourceManager.GetString("channeltopic_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to chatmute.
+        /// </summary>
+        public static string chatmute_cmd {
+            get {
+                return ResourceManager.GetString("chatmute_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Prevents a mentioned user from chatting in text channels..
+        /// </summary>
+        public static string chatmute_desc {
+            get {
+                return ResourceManager.GetString("chatmute_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}chatmute @Someone`.
+        /// </summary>
+        public static string chatmute_usage {
+            get {
+                return ResourceManager.GetString("chatmute_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to chatunmute.
+        /// </summary>
+        public static string chatunmute_cmd {
+            get {
+                return ResourceManager.GetString("chatunmute_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Removes a mute role previously set on a mentioned user with `{0}chatmute` which prevented him from chatting in text channels..
+        /// </summary>
+        public static string chatunmute_desc {
+            get {
+                return ResourceManager.GetString("chatunmute_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}chatunmute @Someone`.
+        /// </summary>
+        public static string chatunmute_usage {
+            get {
+                return ResourceManager.GetString("chatunmute_usage", resourceCulture);
             }
         }
         
@@ -3300,6 +3408,60 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to listquotes liqu.
+        /// </summary>
+        public static string listquotes_cmd {
+            get {
+                return ResourceManager.GetString("listquotes_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}liqu` or `{0}liqu 3`.
+        /// </summary>
+        public static string listquotes_desc {
+            get {
+                return ResourceManager.GetString("listquotes_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Lists all quotes on the server ordered alphabetically. 15 Per page..
+        /// </summary>
+        public static string listquotes_usage {
+            get {
+                return ResourceManager.GetString("listquotes_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to listservers.
+        /// </summary>
+        public static string listservers_cmd {
+            get {
+                return ResourceManager.GetString("listservers_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Lists servers the bot is on with some basic info. 15 per page..
+        /// </summary>
+        public static string listservers_desc {
+            get {
+                return ResourceManager.GetString("listservers_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}listservers 3`.
+        /// </summary>
+        public static string listservers_usage {
+            get {
+                return ResourceManager.GetString("listservers_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to liststreams ls.
         /// </summary>
         public static string liststreams_cmd {
@@ -3876,7 +4038,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Moves permission from one position to another..
+        ///    Looks up a localized string similar to Moves permission from one position to another in Permissions list..
         /// </summary>
         public static string moveperm_desc {
             get {
@@ -3957,7 +4119,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Goes to the next song in the queue. You have to be in the same voice channel as the bot..
+        ///    Looks up a localized string similar to Goes to the next song in the queue. You have to be in the same voice channel as the bot. You can skip multiple songs, but in that case songs will not be requeued if {0}rcs or {0}rpl is enabled..
         /// </summary>
         public static string next_desc {
             get {
@@ -3966,7 +4128,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to `{0}n`.
+        ///    Looks up a localized string similar to `{0}n` or `{0}n 5`.
         /// </summary>
         public static string next_usage {
             get {
@@ -4191,6 +4353,60 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to place.
+        /// </summary>
+        public static string place_cmd {
+            get {
+                return ResourceManager.GetString("place_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Shows a placeholder image of a given tag. Use `{0}placelist` to see all available tags. You can specify the width and height of the image as the last two optional arguments..
+        /// </summary>
+        public static string place_desc {
+            get {
+                return ResourceManager.GetString("place_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}place Cage` or `{0}place steven 500 400`.
+        /// </summary>
+        public static string place_usage {
+            get {
+                return ResourceManager.GetString("place_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to placelist.
+        /// </summary>
+        public static string placelist_cmd {
+            get {
+                return ResourceManager.GetString("placelist_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Shows the list of available tags for the `{0}place` command..
+        /// </summary>
+        public static string placelist_desc {
+            get {
+                return ResourceManager.GetString("placelist_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}placelist`.
+        /// </summary>
+        public static string placelist_usage {
+            get {
+                return ResourceManager.GetString("placelist_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to plant.
         /// </summary>
         public static string plant_cmd {
@@ -4335,7 +4551,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Creates a poll, only person who has manage server permission can do it..
+        ///    Looks up a localized string similar to Creates a poll which requires users to send the number of the voting option to the bot..
         /// </summary>
         public static string poll_desc {
             get {
@@ -4403,6 +4619,33 @@ namespace NadekoBot.Resources {
         public static string prune_usage {
             get {
                 return ResourceManager.GetString("prune_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to publicpoll ppoll.
+        /// </summary>
+        public static string publicpoll_cmd {
+            get {
+                return ResourceManager.GetString("publicpoll_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Creates a public poll which requires users to type a number of the voting option in the channel command is ran in..
+        /// </summary>
+        public static string publicpoll_desc {
+            get {
+                return ResourceManager.GetString("publicpoll_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}ppoll Question?;Answer1;Answ 2;A_3`.
+        /// </summary>
+        public static string publicpoll_usage {
+            get {
+                return ResourceManager.GetString("publicpoll_usage", resourceCulture);
             }
         }
         
@@ -4713,7 +4956,7 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to Removes a permission from a given position.
+        ///    Looks up a localized string similar to Removes a permission from a given position in Permissions list..
         /// </summary>
         public static string removeperm_desc {
             get {
@@ -5730,6 +5973,33 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to setstream.
+        /// </summary>
+        public static string setstream_cmd {
+            get {
+                return ResourceManager.GetString("setstream_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Sets the bots stream. First argument is the twitch link, second argument is stream name..
+        /// </summary>
+        public static string setstream_desc {
+            get {
+                return ResourceManager.GetString("setstream_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}setstream https://www.twitch.tv/masterkwoth Developing Nakedo`.
+        /// </summary>
+        public static string setstream_usage {
+            get {
+                return ResourceManager.GetString("setstream_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to settopic st.
         /// </summary>
         public static string settopic_cmd {
@@ -6243,33 +6513,6 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
-        ///    Looks up a localized string similar to textmute.
-        /// </summary>
-        public static string textmute_cmd {
-            get {
-                return ResourceManager.GetString("textmute_cmd", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///    Looks up a localized string similar to Prevents a mentioned user from chatting in text channels..
-        /// </summary>
-        public static string textmute_desc {
-            get {
-                return ResourceManager.GetString("textmute_desc", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///    Looks up a localized string similar to `{0}textmute @Someone`.
-        /// </summary>
-        public static string textmute_usage {
-            get {
-                return ResourceManager.GetString("textmute_usage", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///    Looks up a localized string similar to tl.
         /// </summary>
         public static string tl_cmd {
@@ -6293,6 +6536,33 @@ namespace NadekoBot.Resources {
         public static string tl_usage {
             get {
                 return ResourceManager.GetString("tl_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to togethertube totube.
+        /// </summary>
+        public static string togethertube_cmd {
+            get {
+                return ResourceManager.GetString("togethertube_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Creates a new room on &lt;https://togethertube.com&gt; and shows the link in the chat..
+        /// </summary>
+        public static string togethertube_desc {
+            get {
+                return ResourceManager.GetString("togethertube_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}totube`.
+        /// </summary>
+        public static string togethertube_usage {
+            get {
+                return ResourceManager.GetString("togethertube_usage", resourceCulture);
             }
         }
         
@@ -6459,6 +6729,60 @@ namespace NadekoBot.Resources {
         }
         
         /// <summary>
+        ///    Looks up a localized string similar to typedel.
+        /// </summary>
+        public static string typedel_cmd {
+            get {
+                return ResourceManager.GetString("typedel_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Deletes a typing article given the ID..
+        /// </summary>
+        public static string typedel_desc {
+            get {
+                return ResourceManager.GetString("typedel_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}typedel 3`.
+        /// </summary>
+        public static string typedel_usage {
+            get {
+                return ResourceManager.GetString("typedel_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to typelist.
+        /// </summary>
+        public static string typelist_cmd {
+            get {
+                return ResourceManager.GetString("typelist_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Lists added typing articles with their IDs. 15 per page..
+        /// </summary>
+        public static string typelist_desc {
+            get {
+                return ResourceManager.GetString("typelist_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}typelist` or `{0}typelist 3`.
+        /// </summary>
+        public static string typelist_usage {
+            get {
+                return ResourceManager.GetString("typelist_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///    Looks up a localized string similar to typestart.
         /// </summary>
         public static string typestart_cmd {
@@ -6563,6 +6887,33 @@ namespace NadekoBot.Resources {
         public static string undeafen_usage {
             get {
                 return ResourceManager.GetString("undeafen_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to unmute.
+        /// </summary>
+        public static string unmute_cmd {
+            get {
+                return ResourceManager.GetString("unmute_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Unmutes a mentioned user previously muted with `{0}mute` command..
+        /// </summary>
+        public static string unmute_desc {
+            get {
+                return ResourceManager.GetString("unmute_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}unmute @Someone`.
+        /// </summary>
+        public static string unmute_usage {
+            get {
+                return ResourceManager.GetString("unmute_usage", resourceCulture);
             }
         }
         
@@ -7076,6 +7427,33 @@ namespace NadekoBot.Resources {
         public static string wowjoke_usage {
             get {
                 return ResourceManager.GetString("wowjoke_usage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to xkcd.
+        /// </summary>
+        public static string xkcd_cmd {
+            get {
+                return ResourceManager.GetString("xkcd_cmd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to Shows a XKCD comic. No arguments will retrieve random one. Number argument will retrieve a specific comic, and &quot;latest&quot; will get the latest one..
+        /// </summary>
+        public static string xkcd_desc {
+            get {
+                return ResourceManager.GetString("xkcd_desc", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///    Looks up a localized string similar to `{0}xkcd` or `{0}xkcd 1400` or `{0}xkcd latest`.
+        /// </summary>
+        public static string xkcd_usage {
+            get {
+                return ResourceManager.GetString("xkcd_usage", resourceCulture);
             }
         }
         

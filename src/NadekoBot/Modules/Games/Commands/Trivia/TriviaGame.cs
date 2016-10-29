@@ -43,7 +43,7 @@ namespace NadekoBot.Modules.Games.Trivia
             this.guild = guild;
             this.channel = channel;
             WinRequirement = winReq;
-            Task.Run(StartGame);
+            Task.Run(async () => { try { await StartGame().ConfigureAwait(false); } catch { } });
         }
 
         private async Task StartGame()
@@ -64,7 +64,7 @@ namespace NadekoBot.Modules.Games.Trivia
                 oldQuestions.Add(CurrentQuestion); //add it to exclusion list so it doesn't show up again
                                                    //sendquestion
                 try { await channel.SendMessageAsync($":question: **{CurrentQuestion.Question}**").ConfigureAwait(false); }
-                catch (HttpException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                catch (HttpException ex) when (ex.StatusCode  == System.Net.HttpStatusCode.NotFound || ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 {
                     break;
                 }
@@ -81,7 +81,12 @@ namespace NadekoBot.Modules.Games.Trivia
                     //hint
                     await Task.Delay(HintTimeoutMiliseconds, token).ConfigureAwait(false);
                     if (ShowHints)
-                        try { await channel.SendMessageAsync($":exclamation:**Hint:** {CurrentQuestion.GetHint()}").ConfigureAwait(false); } catch (Exception ex) { _log.Warn(ex); }
+                        try { await channel.SendMessageAsync($":exclamation:**Hint:** {CurrentQuestion.GetHint()}").ConfigureAwait(false); }
+                        catch (HttpException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound || ex.StatusCode == System.Net.HttpStatusCode.Forbidden)
+                        {
+                            break;
+                        }
+                        catch (Exception ex) { _log.Warn(ex); }
 
                     //timeout
                     await Task.Delay(QuestionDurationMiliseconds - HintTimeoutMiliseconds, token).ConfigureAwait(false);
@@ -151,7 +156,7 @@ namespace NadekoBot.Modules.Games.Trivia
                     await channel.SendMessageAsync($":exclamation: We have a winner! It's {guildUser.Mention}.").ConfigureAwait(false);
                 }
                 catch (Exception ex) { _log.Warn(ex); }
-        });
+            });
             return Task.CompletedTask;
         }
 
