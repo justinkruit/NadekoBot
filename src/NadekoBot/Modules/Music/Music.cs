@@ -45,7 +45,7 @@ namespace NadekoBot.Modules.Music
 
             MusicPlayer musicPlayer;
             if (!MusicPlayers.TryGetValue(channel.Guild.Id, out musicPlayer)) return Task.CompletedTask;
-            if (musicPlayer.PlaybackVoiceChannel == ((IGuildUser)umsg.Author).VoiceChannel)
+            if (musicPlayer.PlaybackVoiceChannel == ((SocketGuildUser)Context.User).VoiceChannel)
             {
                 while (--skipCount > 0)
                 {

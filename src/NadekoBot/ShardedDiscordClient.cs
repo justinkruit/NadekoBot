@@ -66,7 +66,9 @@ namespace NadekoBot
             Clients = clientList.AsReadOnly();
         }
 
-        public ISelfUser CurrentUser => Clients[0].CurrentUser;
+        public SocketSelfUser CurrentUser => Clients[0].CurrentUser;
+
+        public IReadOnlyCollection<SocketSelfUser> AllCurrentUsers => Clients.Select(c => c.CurrentUser).ToArray();
 
         public IReadOnlyCollection<SocketGuild> Guilds => Clients.SelectMany(c => c.Guilds).ToArray();
 
@@ -76,26 +78,19 @@ namespace NadekoBot
         public Task<IDMChannel> GetDMChannelAsync(ulong channelId) =>
             Clients[0].GetDMChannelAsync(channelId);
 
-        internal Task LoginAsync(TokenType tokenType, string token) =>
+        public Task LoginAsync(TokenType tokenType, string token) =>
             Task.WhenAll(Clients.Select(async c => { await c.LoginAsync(tokenType, token); _log.Info($"Shard #{c.ShardId} logged in."); }));
 
-        internal Task ConnectAsync() =>
+        public Task ConnectAsync() =>
             Task.WhenAll(Clients.Select(async c => { await c.ConnectAsync(); _log.Info($"Shard #{c.ShardId} connected."); }));
 
-        internal Task DownloadAllUsersAsync() =>
-            Task.WhenAll(Clients.Select(async c => { await c.DownloadAllUsersAsync(); _log.Info($"Shard #{c.ShardId} downloaded {c.GetGuilds().Sum(g => g.GetUsers().Count)} users."); }));
+        public Task DownloadAllUsersAsync() =>
+            Task.WhenAll(Clients.Select(async c => { await c.DownloadAllUsersAsync(); _log.Info($"Shard #{c.ShardId} downloaded {c.Guilds.Sum(g => g.Users.Count)} users."); }));
 
-        public async Task SetGame(string game)
-        {
-            await Task.WhenAll((await GetAllCurrentUsersAsync())
-                                    .Select(u => u.ModifyStatusAsync(ms => ms.Game = new Discord.Game(game))));
-        }
+        public Task SetGameAsync(string game) => 
+            Task.WhenAll(Clients.Select(c => c.SetGame(game)));
 
-        public async Task SetStream(string name, string url)
-        {
-            await Task.WhenAll((await GetAllCurrentUsersAsync())
-                                    .Select(u => u.ModifyStatusAsync(ms => ms.Game = new Discord.Game(name, url, StreamType.Twitch))));
-
-        }
+        public Task SetStreamAsync(string name, string url) => 
+            Task.WhenAll(Clients.Select(c => c.SetGame(name, url, StreamType.Twitch)));
     }
 }

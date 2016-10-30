@@ -188,7 +188,7 @@ namespace NadekoBot.Modules.Utility
             if (page < 0)
                 return;
 
-            var guilds = NadekoBot.Client.GetGuilds().OrderBy(g => g.Name).Skip((page - 1) * 15).Take(15);
+            var guilds = NadekoBot.Client.Guilds.OrderBy(g => g.Name).Skip((page - 1) * 15).Take(15);
 
             if (!guilds.Any())
             {
@@ -196,7 +196,7 @@ namespace NadekoBot.Modules.Utility
                 return;
             }
 
-            await channel.SendMessageAsync(String.Join("\n", guilds.Select(g => $"`Name:` {g.Name} `Id:` {g.Id} `Members:` {g.GetUsers().Count} `OwnerId:`{g.OwnerId}"))).ConfigureAwait(false);
+            await channel.SendMessageAsync(String.Join("\n", guilds.Select(g => $"`Name:` {g.Name} `Id:` {g.Id} `Members:` {g.Users.Count} `OwnerId:`{g.OwnerId}"))).ConfigureAwait(false);
         }
 
         //[NadekoCommand, Usage, Description, Aliases]

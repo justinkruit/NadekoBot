@@ -113,15 +113,15 @@ namespace NadekoBot.Modules.Utility
                 {
                     target = channel;
                 }
-                await Remind(umsg, target, timeStr, message).ConfigureAwait(false);
+                await Remind(target, timeStr, message).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
             [Priority(0)]
-            public async Task Remind(IUserMessage umsg, IMessageChannel ch, string timeStr, [Remainder] string message)
+            public async Task Remind(IMessageChannel ch, string timeStr, [Remainder] string message)
             {
-                var channel = (ITextChannel)umsg.Channel;
+                var channel = (SocketTextChannel)Context.Channel;
 
                 if (ch == null)
                 {

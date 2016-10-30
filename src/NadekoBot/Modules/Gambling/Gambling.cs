@@ -102,14 +102,14 @@ namespace NadekoBot.Modules.Gambling
         [RequireContext(ContextType.Guild)]
         [OwnerOnly]
         [Priority(2)]
-        public Task Award(long amount, [Remainder] IGuildUser usr) =>
+        public Task Award(int amount, [Remainder] IGuildUser usr) =>
             Award(amount, usr.Id);
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [OwnerOnly]
         [Priority(1)]
-        public async Task Award(long amount, [Remainder] ulong usrId)
+        public async Task Award(int amount, [Remainder] ulong usrId)
         {
             var channel = (SocketTextChannel)Context.Channel;
 
@@ -125,14 +125,14 @@ namespace NadekoBot.Modules.Gambling
         [RequireContext(ContextType.Guild)]
         [OwnerOnly]
         [Priority(0)]
-        public async Task Award(IUserMessage umsg, int amount, [Remainder] IRole role)
+        public async Task Award(int amount, [Remainder] IRole role)
         {
-            var channel = (ITextChannel)umsg.Channel;
-            var users = channel.Guild.GetUsers()
-                               .Where(u => u.Roles.Contains(role))
+            var channel = (SocketTextChannel)Context.Channel;
+            var users = channel.Guild.Users
+                               .Where(u => u.GetRoles().Contains(role))
                                .ToList();
             await Task.WhenAll(users.Select(u => CurrencyHandler.AddCurrencyAsync(u.Id,
-                                                      $"Awarded by bot owner to **{role.Name}** role. ({umsg.Author.Username}/{umsg.Author.Id})",
+                                                      $"Awarded by bot owner to **{role.Name}** role. ({Context.User.Username}/{Context.User.Id})",
                                                       amount)))
                          .ConfigureAwait(false);
 

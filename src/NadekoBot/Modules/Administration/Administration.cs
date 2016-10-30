@@ -294,7 +294,10 @@ namespace NadekoBot.Modules.Administration
             {
                 msg = "No reason provided.";
             }
-            if (umsg.Author.Id != user.Guild.OwnerId && user.Roles.Select(r=>r.Position).Max() >= ((IGuildUser)umsg.Author).Roles.Select(r => r.Position).Max())
+            var banner = (SocketGuildUser)Context.User;
+            var bannerRoles = banner.GetRoles();
+
+            if (Context.User.Id != user.Guild.OwnerId && bannerRoles.Select(r=>r.Position).Max() >= bannerRoles.Select(r => r.Position).Max())
             {
                 await channel.SendMessageAsync("You can't use this command on users with a role higher or equal to yours in the role hierarchy.");
                 return;
@@ -329,7 +332,9 @@ namespace NadekoBot.Modules.Administration
             {
                 msg = "No reason provided.";
             }
-            if (umsg.Author.Id != user.Guild.OwnerId && user.Roles.Select(r => r.Position).Max() >= ((IGuildUser)umsg.Author).Roles.Select(r => r.Position).Max())
+            var bannerRoles = ((SocketGuildUser)Context.User).GetRoles();
+
+            if (Context.User.Id != user.Guild.OwnerId && bannerRoles.Select(r => r.Position).Max() >= bannerRoles.Select(r => r.Position).Max())
             {
                 await channel.SendMessageAsync("You can't use this command on users with a role higher or equal to yours in the role hierarchy.");
                 return;
@@ -367,8 +372,10 @@ namespace NadekoBot.Modules.Administration
                 await channel.SendMessageAsync("User not found.").ConfigureAwait(false);
                 return;
             }
+            var banner = (SocketGuildUser)Context.User;
+            var bannerRoles = banner.GetRoles();
 
-            if (umsg.Author.Id != user.Guild.OwnerId && user.Roles.Select(r => r.Position).Max() >= ((IGuildUser)umsg.Author).Roles.Select(r => r.Position).Max())
+            if (Context.User.Id != user.Guild.OwnerId && bannerRoles.Select(r => r.Position).Max() >= bannerRoles.Select(r => r.Position).Max())
             {
                 await channel.SendMessageAsync("You can't use this command on users with a role higher or equal to yours in the role hierarchy.");
                 return;
@@ -465,9 +472,9 @@ namespace NadekoBot.Modules.Administration
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         [RequirePermission(GuildPermission.ManageRoles)]
-        public async Task ChatUnmute(IUserMessage umsg, IGuildUser user)
+        public async Task ChatUnmute(IGuildUser user)
         {
-            var channel = (ITextChannel)umsg.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             try
             {
@@ -728,7 +735,21 @@ namespace NadekoBot.Modules.Administration
 
             game = game ?? "";
 
-            await NadekoBot.Client.GetCurrentUser().ModifyStatusAsync(u => u.Game = new Game(game)).ConfigureAwait(false);
+            await NadekoBot.Client.SetGameAsync(game).ConfigureAwait(false);
+
+            await channel.SendMessageAsync("`New stream set.`").ConfigureAwait(false);
+        }
+
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        [OwnerOnly]
+        public async Task SetStream(string url, [Remainder] string game = null)
+        {
+            var channel = (SocketTextChannel)Context.Channel;
+
+            game = game ?? "";
+
+            await NadekoBot.Client.SetStreamAsync(game, url).ConfigureAwait(false);
 
             await channel.SendMessageAsync("`New stream set.`").ConfigureAwait(false);
         }
@@ -822,7 +843,7 @@ namespace NadekoBot.Modules.Administration
                 cnt -= 100;
             }
             var title = $"Chatlog-{channel.Guild.Name}/#{channel.Name}-{DateTime.Now}.txt";
-            await (umsg.Author as IGuildUser).SendFileAsync(
+            await ((SocketGuildUser)Context.User).SendFileAsync(
                 await JsonConvert.SerializeObject(new { Messages = msgs.Select(s => $"【{s.Timestamp:HH:mm:ss}】" + s.ToString()) }, Formatting.Indented).ToStream().ConfigureAwait(false),
                 title, title).ConfigureAwait(false);
         }

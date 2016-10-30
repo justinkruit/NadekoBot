@@ -55,9 +55,7 @@ namespace NadekoBot.Modules.Administration
                                 if (string.IsNullOrWhiteSpace(status))
                                     continue;
                                 PlayingPlaceholders.ForEach(e => status = status.Replace(e.Key, e.Value()));
-                                await NadekoBot.Client.CurrentUser
-                                        .ModifyStatusAsync(mpp => mpp.Game = new Discord.API.Game() { Name = status })
-                                        .ConfigureAwait(false);
+                                await NadekoBot.Client.SetGameAsync(status).ConfigureAwait(false);
                             }
                         }
                         catch (Exception ex)

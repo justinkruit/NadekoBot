@@ -79,8 +79,13 @@ namespace NadekoBot.Modules.Administration
                 _client.ChannelUpdated += _client_ChannelUpdated;
             }
 
-            private static Task _client_UserUpdated(SocketGuildUser before, SocketGuildUser after)
+            private static Task _client_UserUpdated(SocketUser beforeU, SocketUser afterU)
             {
+                var before = beforeU as SocketGuildUser;
+                var after = afterU as SocketGuildUser;
+                if (before == null || after == null)
+                    return Task.CompletedTask;
+
                 LogSetting logSetting;
                 if (!GuildLogSettings.TryGetValue(before.Guild.Id, out logSetting)
                     || !logSetting.IsLogging
@@ -251,7 +256,7 @@ namespace NadekoBot.Modules.Administration
                 return Task.CompletedTask;
             }
 
-            private static Task _client_UserPresenceUpdated(SocketUser susr, SocketPresence before, SocketPresence after)
+            private static Task _client_UserPresenceUpdated(Optional<SocketGuild> guild, SocketUser susr, SocketPresence before, SocketPresence after)
             {
                 var usr = susr as SocketGuildUser;
                 if (usr == null)

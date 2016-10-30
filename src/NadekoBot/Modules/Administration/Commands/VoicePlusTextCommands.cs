@@ -39,10 +39,9 @@ namespace NadekoBot.Modules.Administration
                     return Task.CompletedTask;
                 var task = Task.Run(async () =>
                 {
-                    var botUserPerms = guild.GetCurrentUser().GuildPermissions;
                     try
                     {
-                        var botUserPerms = guild.GetCurrentUser().GuildPermissions;
+                        var botUserPerms = guild.CurrentUser.GuildPermissions;
                     
                         if (before.VoiceChannel == after.VoiceChannel) return;
                         

@@ -14,19 +14,13 @@ namespace NadekoBot.Modules.Searches
 {
     public partial class Searches
     {
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task Translate(string langs, [Remainder] string text = null)
-        {
-            var channel = (SocketTextChannel)Context.Channel;
         public struct UserChannelPair
         {
             public ulong UserId { get; set; }
             public ulong ChannelId { get; set; }
         }
 
-        [Group]
-        public class TranslateCommands
+        public class TranslateCommands : ModuleBase
         {
             private static ConcurrentDictionary<ulong, bool> TranslatedChannels { get; }
             private static ConcurrentDictionary<UserChannelPair, string> UserLanguages { get; }
@@ -39,7 +33,7 @@ namespace NadekoBot.Modules.Searches
                 NadekoBot.Client.MessageReceived += (msg) =>
                 {
                     var umsg = msg as IUserMessage;
-                    if(umsg == null)
+                    if (umsg == null)
                         return Task.CompletedTask;
 
                     bool autoDelete;
@@ -60,11 +54,11 @@ namespace NadekoBot.Modules.Searches
 
                         try
                         {
-                            var text = await TranslateInternal(umsg, langs, umsg.Resolve(UserMentionHandling.Ignore), true)
+                            var text = await TranslateInternal(langs, umsg.Content, true)
                                                 .ConfigureAwait(false);
                             if (autoDelete)
                                 try { await umsg.DeleteAsync().ConfigureAwait(false); } catch { }
-                            await umsg.Channel.SendMessageAsync($"{umsg.Author.Mention} `said:` "+text.Replace("<@ ", "<@").Replace("<@! ", "<@!")).ConfigureAwait(false);
+                            await umsg.Channel.SendMessageAsync($"{umsg.Author.Mention} `said:` " + text.Replace("<@ ", "<@").Replace("<@! ", "<@!")).ConfigureAwait(false);
                         }
                         catch { }
 
@@ -75,14 +69,13 @@ namespace NadekoBot.Modules.Searches
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Translate(IUserMessage umsg, string langs, [Remainder] string text = null)
+            public async Task Translate(string langs, [Remainder] string text = null)
             {
-                var channel = (ITextChannel)umsg.Channel;
-
+                var channel = (SocketTextChannel)Context.Channel;
                 try
                 {
-                    await umsg.Channel.TriggerTypingAsync().ConfigureAwait(false);
-                    var translation = await TranslateInternal(umsg, langs, text);
+                    await channel.TriggerTypingAsync().ConfigureAwait(false);
+                    var translation = await TranslateInternal(langs, text);
                     await channel.SendMessageAsync(translation).ConfigureAwait(false);
 
                 }
@@ -92,7 +85,7 @@ namespace NadekoBot.Modules.Searches
                 }
             }
 
-            private static async Task<string> TranslateInternal(IUserMessage umsg, string langs, [Remainder] string text = null, bool silent = false)
+            private static async Task<string> TranslateInternal(string langs, [Remainder] string text = null, bool silent = false)
             {
                 var langarr = langs.ToLowerInvariant().Split('>');
                 if (langarr.Length != 2)
@@ -173,14 +166,15 @@ namespace NadekoBot.Modules.Searches
                 await channel.SendMessageAsync(":ok:").ConfigureAwait(false);
             }
 
-        [NadekoCommand, Usage, Description, Aliases]
-        [RequireContext(ContextType.Guild)]
-        public async Task Translangs()
-        {
-            var channel = (SocketTextChannel)Context.Channel;
+            [NadekoCommand, Usage, Description, Aliases]
+            [RequireContext(ContextType.Guild)]
+            public async Task Translangs()
+            {
+                var channel = (SocketTextChannel)Context.Channel;
 
-            await channel.SendTableAsync(GoogleTranslator.Instance.Languages, str => $"{str,-15}", columns: 3);
+                await channel.SendTableAsync(GoogleTranslator.Instance.Languages, str => $"{str,-15}", columns: 3);
+            }
+
         }
-
     }
 }

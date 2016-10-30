@@ -26,7 +26,7 @@ namespace NadekoBot.Modules.Utility
                 target = res.RequestMessage.RequestUri;
             }
 
-            await channel.SendMessageAsync($"{imsg.Author.Mention}, `Here is the link:` {target}")
+            await channel.SendMessageAsync($"{Context.User.Mention}, `Here is the link:` {target}")
                          .ConfigureAwait(false);
         }
         [NadekoCommand, Usage, Description, Aliases]
@@ -53,7 +53,7 @@ namespace NadekoBot.Modules.Utility
 `TextChannels:` **{(await server.GetTextChannelsAsync()).Count()}** `VoiceChannels:` **{(await server.GetVoiceChannelsAsync()).Count()}**
 `Members:` **{users.Count}** `-` {users.Count(u => u.Status == UserStatus.Online)}:green_heart: {users.Count(u => u.Status == UserStatus.Idle)}:yellow_heart: {users.Count(u => u.Status == UserStatus.DoNotDisturb)}:heart: {users.Count(u => u.Status == UserStatus.Offline || u.Status == UserStatus.Unknown)}:black_heart:
 `Roles:` **{server.Roles.Count()}**
-`Created At:` **{server.createdAt.ToString("dd.MM.yyyy HH:mm")}**
+`Created At:` **{server.CreatedAt.ToString("dd.MM.yyyy HH:mm")}**
 ");
                 if (server.Emojis.Count() > 0)
                     sb.AppendLine($"`Custom Emojis:` **{string.Join(", ", server.Emojis)}**");
@@ -72,7 +72,7 @@ namespace NadekoBot.Modules.Utility
 
                 var toReturn = $@"`Name:` **#{ch.Name}**
 `Id:` **{ch.Id}**
-`Created At:` **{ch.createdAt.ToString("dd.MM.yyyy HH:mm")}**
+`Created At:` **{ch.CreatedAt.ToString("dd.MM.yyyy HH:mm")}**
 `Topic:` **{ch.Topic}**
 `Users:` **{(await ch.GetUsersAsync().Flatten().ConfigureAwait(false)).Count()}**";
                 await Context.Channel.SendMessageAsync(toReturn).ConfigureAwait(false);

@@ -19,17 +19,17 @@ namespace NadekoBot.Modules.Games
         [RequirePermission(GuildPermission.ManageMessages)]
         [RequireContext(ContextType.Guild)]
         public Task Poll([Remainder] string arg = null)
-            => InternalStartPoll(umsg, arg, isPublic: false);
+            => InternalStartPoll(arg, isPublic: false);
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequirePermission(GuildPermission.ManageMessages)]
         [RequireContext(ContextType.Guild)]
         public Task PublicPoll([Remainder] string arg = null)
-            => InternalStartPoll(umsg, arg, isPublic: true);
+            => InternalStartPoll(arg, isPublic: true);
 
-        private async Task InternalStartPoll(IUserMessage umsg, string arg, bool isPublic = false)
+        private async Task InternalStartPoll(string arg, bool isPublic = false)
         {
-            var channel = (SocketGuildChannel)Context.Channel;
+            var channel = (SocketTextChannel)Context.Channel;
 
             if (!(Context.User as IGuildUser).GuildPermissions.ManageChannels)
                 return;
@@ -38,8 +38,7 @@ namespace NadekoBot.Modules.Games
             var data = arg.Split(';');
             if (data.Length < 3)
                 return;
-
-            var poll = new Poll(umsg, data[0], data.Skip(1), isPublic: isPublic);
+            
             var poll = new Poll(Context.Message, data[0], data.Skip(1), isPublic: isPublic);
             if (ActivePolls.TryAdd(channel.Guild, poll))
             {

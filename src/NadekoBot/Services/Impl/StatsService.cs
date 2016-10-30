@@ -26,7 +26,7 @@ namespace NadekoBot.Services.Impl
         Timer carbonitexTimer { get; }
 
 
-        public StatsService(ShardedDiscordClient  client, CommandHandler cmdHandler)
+        public StatsService(ShardedDiscordClient client, CommandHandler cmdHandler)
         {
 
             this.client = client;
@@ -47,7 +47,7 @@ namespace NadekoBot.Services.Impl
                     {
                         using (var content = new FormUrlEncodedContent(
                             new Dictionary<string, string> {
-                                { "servercount", this.client.GetGuilds().Count.ToString() },
+                                { "servercount", this.client.Guilds.Count.ToString() },
                                 { "key", NadekoBot.Credentials.CarbonKey }}))
                         {
                             content.Headers.Clear();

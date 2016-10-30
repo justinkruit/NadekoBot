@@ -131,13 +131,11 @@ You can support the project on patreon: <https://patreon.com/nadekobot> or paypa
             helpstr.AppendLine(string.Join("\n", NadekoBot.CommandService.Modules.Select(m => $"- [{m.Name}](#{m.Name.ToLowerInvariant()})")));
             helpstr.AppendLine();
             string lastModule = null;
-
-            var lastModule = "";
             foreach (var com in NadekoBot.CommandService.Commands.OrderBy(com=>com.Module.Name).GroupBy(c=>c.Text).Select(g=>g.First()))
             {
                 if (com.Module.Name != lastModule)
                 {
-                    if (lastModule != null)
+                    if (!string.IsNullOrWhiteSpace(lastModule))
                     {
                         helpstr.AppendLine();
                         helpstr.AppendLine("###### [Back to TOC](#table-of-contents)");
