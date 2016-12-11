@@ -20,9 +20,9 @@ namespace NadekoBot.Services.Database.Models
         public string RemindMessageFormat { get; set; } = "❗⏰**I've been told to remind you to '%message%' now by %user%.**⏰❗";
 
 
-        public string CurrencySign { get; set; } = "🌸";
-        public string CurrencyName { get; set; } = "Nadeko Flower";
-        public string CurrencyPluralName { get; set; } = "Nadeko Flowers";
+        public string CurrencySign { get; set; } = "⚡";
+        public string CurrencyName { get; set; } = "WIA Bolt";
+        public string CurrencyPluralName { get; set; } = "WIA Bolts";
 
         public HashSet<EightBallResponse> EightBallResponses { get; set; } = new HashSet<EightBallResponse>();
         public HashSet<RaceAnimal> RaceAnimals { get; set; } = new HashSet<RaceAnimal>();
@@ -45,11 +45,6 @@ Credits:
 GitHub link: <https://github.com/justinkruit/WIABot>
 
 The WhereIsAssange Server: https://discordapp.com/invite/4yaZgkD";
-        /*
-         * To add me to your server, use this link -> <https://discordapp.com/oauth2/authorize?client_id={0}&scope=bot&permissions=66186303>
-
-         * 
-         */
         public int MigrationVersion { get; set; }
     }
 
