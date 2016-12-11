@@ -107,7 +107,7 @@ namespace NadekoBot.Modules.Administration
                                 {
                                     await PunishUsers(spamSettings.Action, await GetMuteRole(channel.Guild), ProtectionType.Spamming, (IGuildUser)msg.Author)
                                         .ConfigureAwait(false);
-                                    await channel.SendMessageAsync($"🔇 **{msg.Author}** has been **muted** from text and voice chat successfully.").ConfigureAwait(false);
+                                    await channel.SendMessageAsync($"🔇 **{msg.Author}** has been **muted**. A review of the event will occur and action will be taken when a mod is available.").ConfigureAwait(false);
                                 }
                             }
                         }
