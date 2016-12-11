@@ -172,9 +172,9 @@ namespace NadekoBot.Modules.Utility
                 {
                     Author = new EmbedAuthor()
                     {
-                        Name = $"NadekoBot v{StatsService.BotVersion}",
-                        Url = "http://nadekobot.readthedocs.io/en/latest/",
-                        IconUrl = "https://cdn.discordapp.com/avatars/116275390695079945/b21045e778ef21c96d175400e779f0fb.jpg"
+                        Name = $"WIABot v{StatsService.BotVersion}",
+                        Url = "https://github.com/justinkruit/WIABot",
+                        IconUrl = "http://i.imgur.com/7Vv6VLa.png"
                     },
                     Fields = new[] {
                         new EmbedField() {

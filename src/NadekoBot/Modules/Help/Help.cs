@@ -162,7 +162,7 @@ namespace NadekoBot.Modules.Help
 **Hosting Guides and docs can be found here**: <http://nadekobot.readthedocs.io/en/latest/>").ConfigureAwait(false);
         }
 
-        [NadekoCommand, Usage, Description, Aliases]
+        /*[NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
         public async Task Donate(IUserMessage umsg)
         {
@@ -174,7 +174,7 @@ You can send donations to `nadekodiscordbot@gmail.com`
 Don't forget to leave your discord name or id in the message.
 
 **Thank you** ♥️").ConfigureAwait(false);
-        }
+        }*/
     }
 
     public class CommandTextEqualityComparer : IEqualityComparer<Command>
