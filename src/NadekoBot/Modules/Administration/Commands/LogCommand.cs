@@ -70,10 +70,10 @@ namespace NadekoBot.Modules.Administration
                 _client.MessageDeleted += _client_MessageDeleted;
                 _client.UserBanned += _client_UserBanned;
                 _client.UserUnbanned += _client_UserUnbanned;
-                _client.UserJoined += _client_UserJoined;
-                _client.UserLeft += _client_UserLeft;
+                //_client.UserJoined += _client_UserJoined;
+                //_client.UserLeft += _client_UserLeft;
                 _client.UserPresenceUpdated += _client_UserPresenceUpdated;
-                _client.UserVoiceStateUpdated += _client_UserVoiceStateUpdated;
+                //_client.UserVoiceStateUpdated += _client_UserVoiceStateUpdated;
                 _client.UserUpdated += _client_UserUpdated;
 
                 _client.ChannelCreated += _client_ChannelCreated;
