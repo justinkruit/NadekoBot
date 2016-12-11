@@ -42,6 +42,7 @@ Credits:
 - NadekoBot, which is the bot this one is build on.
 - Vukašin Anđelković, a good designer, for making the icon of the bot.
 
+GitHub link: <https://github.com/justinkruit/WIABot>
 
 The WhereIsAssange Server: https://discordapp.com/invite/4yaZgkD";
         /*
