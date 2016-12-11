@@ -856,7 +856,7 @@ namespace NadekoBot.Modules.Administration
         }
 
         IGuild nadekoSupportServer;
-        [NadekoCommand, Usage, Description, Aliases]
+        /*[NadekoCommand, Usage, Description, Aliases]
         public async Task Donators(IUserMessage umsg)
         {
             IEnumerable<Donator> donatorsOrdered;
@@ -895,6 +895,6 @@ namespace NadekoBot.Modules.Administration
             }
 
             await umsg.Channel.SendMessageAsync($"Successfuly added a new donator. Total donated amount from this user: {don.Amount} 👑").ConfigureAwait(false);
-        }
+        }*/
     }
 }
