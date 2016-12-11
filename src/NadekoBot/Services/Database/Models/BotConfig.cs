@@ -45,6 +45,7 @@ Credits:
 GitHub link: <https://github.com/justinkruit/WIABot>
 
 The WhereIsAssange Server: https://discordapp.com/invite/4yaZgkD";
+        /* To add me to your server, use this link -> <https://discordapp.com/oauth2/authorize?client_id={0}&scope=bot&permissions=66186303> */
         public int MigrationVersion { get; set; }
     }
 
