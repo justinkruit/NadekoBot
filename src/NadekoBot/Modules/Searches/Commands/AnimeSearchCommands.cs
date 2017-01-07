@@ -1,5 +1,4 @@
 ﻿using Discord;
-using Discord.API;
 using Discord.Commands;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
@@ -18,7 +17,7 @@ namespace NadekoBot.Modules.Searches
     public partial class Searches
     {
         [Group]
-        public class AnimeSearchCommands
+        public class AnimeSearchCommands : ModuleBase
         {
             private static Timer anilistTokenRefresher { get; }
             private static Logger _log { get; }
@@ -46,18 +45,16 @@ namespace NadekoBot.Modules.Searches
                             anilistToken = JObject.Parse(stringContent)["access_token"].ToString();
                         }
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
                         _log.Error(ex);
                     }
                 }, null, TimeSpan.FromSeconds(0), TimeSpan.FromMinutes(29));
             }
 
             [NadekoCommand, Usage, Description, Aliases]
-            [RequireContext(ContextType.Guild)]
-            public async Task Anime(IUserMessage umsg, [Remainder] string query)
+            public async Task Anime([Remainder] string query)
             {
-                var channel = (ITextChannel)umsg.Channel;
-
                 if (string.IsNullOrWhiteSpace(query))
                     return;
 
@@ -65,46 +62,26 @@ namespace NadekoBot.Modules.Searches
 
                 if (animeData == null)
                 {
-                    await umsg.Channel.SendErrorAsync("Failed finding that animu.").ConfigureAwait(false);
+                    await Context.Channel.SendErrorAsync("Failed finding that animu.").ConfigureAwait(false);
                     return;
                 }
 
-                var embed = new Discord.API.Embed()
-                {
-                    Description = animeData.Synopsis,
-                    Title = animeData.title_english,
-                    Url = animeData.Link,
-                    Image = new Discord.API.EmbedImage() {
-                        Url = animeData.image_url_lge
-                    },
-                    Fields = new[] {
-                        new Discord.API.EmbedField() {
-                            Inline = true,
-                            Name = "Episodes",
-                            Value = animeData.total_episodes.ToString()
-                        },
-                        new Discord.API.EmbedField() {
-                            Inline = true,
-                            Name = "Status",
-                            Value =  animeData.AiringStatus.ToString()
-                        },
-                        new Discord.API.EmbedField() {
-                            Inline = true,
-                            Name = "Genres",
-                            Value = String.Join(", ", animeData.Genres)
-                        }
-                    },
-                    Color = NadekoBot.OkColor
-                };
-                await channel.EmbedAsync(embed).ConfigureAwait(false);
+                var embed = new EmbedBuilder().WithColor(NadekoBot.OkColor)
+                    .WithDescription(animeData.Synopsis.Replace("<br>", Environment.NewLine))
+                    .WithTitle(animeData.title_english)
+                    .WithUrl(animeData.Link)
+                    .WithImageUrl(animeData.image_url_lge)
+                    .AddField(efb => efb.WithName("Episodes").WithValue(animeData.total_episodes.ToString()).WithIsInline(true))
+                    .AddField(efb => efb.WithName("Status").WithValue(animeData.AiringStatus.ToString()).WithIsInline(true))
+                    .AddField(efb => efb.WithName("Genres").WithValue(String.Join(", ", animeData.Genres)).WithIsInline(true))
+                    .WithFooter(efb => efb.WithText("Score: " + animeData.average_score + " / 100"));
+                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
             }
 
             [NadekoCommand, Usage, Description, Aliases]
             [RequireContext(ContextType.Guild)]
-            public async Task Manga(IUserMessage umsg, [Remainder] string query)
+            public async Task Manga([Remainder] string query)
             {
-                var channel = (ITextChannel)umsg.Channel;
-
                 if (string.IsNullOrWhiteSpace(query))
                     return;
 
@@ -112,40 +89,21 @@ namespace NadekoBot.Modules.Searches
 
                 if (mangaData == null)
                 {
-                    await umsg.Channel.SendErrorAsync("Failed finding that mango.").ConfigureAwait(false);
+                    await Context.Channel.SendErrorAsync("Failed finding that mango.").ConfigureAwait(false);
                     return;
                 }
 
-                var embed = new Discord.API.Embed()
-                {
-                    Description = mangaData.Synopsis,
-                    Title = mangaData.title_english,
-                    Url = mangaData.Link,
-                    Image = new Discord.API.EmbedImage()
-                    {
-                        Url = mangaData.image_url_lge
-                    },
-                    Fields = new[] {
-                        new Discord.API.EmbedField() {
-                            Inline = true,
-                            Name = "Chapters",
-                            Value = mangaData.total_chapters.ToString()
-                        },
-                        new Discord.API.EmbedField() {
-                            Inline = true,
-                            Name = "Status",
-                            Value =  mangaData.publishing_status.ToString()
-                        },
-                        new Discord.API.EmbedField() {
-                            Inline = true,
-                            Name = "Genres",
-                            Value = String.Join(", ", mangaData.Genres)
-                        }
-                    },
-                    Color = NadekoBot.OkColor
-                };
+                var embed = new EmbedBuilder().WithColor(NadekoBot.OkColor)
+                    .WithDescription(mangaData.Synopsis.Replace("<br>", Environment.NewLine))
+                    .WithTitle(mangaData.title_english)
+                    .WithUrl(mangaData.Link)
+                    .WithImageUrl(mangaData.image_url_lge)
+                    .AddField(efb => efb.WithName("Episodes").WithValue(mangaData.total_chapters.ToString()).WithIsInline(true))
+                    .AddField(efb => efb.WithName("Status").WithValue(mangaData.publishing_status.ToString()).WithIsInline(true))
+                    .AddField(efb => efb.WithName("Genres").WithValue(String.Join(", ", mangaData.Genres)).WithIsInline(true))
+                    .WithFooter(efb => efb.WithText("Score: " + mangaData.average_score + " / 100"));
 
-                await channel.EmbedAsync(embed).ConfigureAwait(false);
+                await Context.Channel.EmbedAsync(embed).ConfigureAwait(false);
             }
 
             private async Task<AnimeResult> GetAnimeData(string query)
@@ -165,7 +123,8 @@ namespace NadekoBot.Modules.Searches
                         return await Task.Run(() => { try { return JsonConvert.DeserializeObject<AnimeResult>(aniData); } catch { return null; } }).ConfigureAwait(false);
                     }
                 }
-                catch (Exception ex) {
+                catch (Exception ex)
+                {
                     _log.Warn(ex, "Failed anime search for {0}", query);
                     return null;
                 }
