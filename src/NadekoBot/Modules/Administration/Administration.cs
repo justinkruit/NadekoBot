@@ -519,7 +519,7 @@ title, title).ConfigureAwait(false);
             await Context.Channel.SendMessageAsync(send).ConfigureAwait(false);
         }
 
-        IGuild nadekoSupportServer;
+        /*IGuild nadekoSupportServer;
         [NadekoCommand, Usage, Description, Aliases]
         public async Task Donators()
         {
@@ -557,6 +557,6 @@ title, title).ConfigureAwait(false);
             }
 
             await Context.Channel.SendConfirmAsync($"Successfuly added a new donator. Total donated amount from this user: {don.Amount} 👑").ConfigureAwait(false);
-        }
+        }*/
     }
 }
