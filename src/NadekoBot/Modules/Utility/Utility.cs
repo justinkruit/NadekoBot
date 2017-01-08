@@ -269,8 +269,8 @@ namespace NadekoBot.Modules.Utility
 
             await Context.Channel.EmbedAsync(
                 new EmbedBuilder().WithOkColor()
-                    .WithAuthor(eab => eab.WithName($"WIABot v{StatsService.BotVersion}")
-                                          .WithUrl("https://github.com/justinkruit/WIABot")
+                    .WithAuthor(eab => eab.WithName($"DiscordBot v{StatsService.BotVersion}")
+                                          .WithUrl("https://github.com/justinkruit/DiscordBot")
                                           .WithIconUrl("http://i.imgur.com/7Vv6VLa.png"))
                     .AddField(efb => efb.WithName(Format.Bold("Author")).WithValue(stats.Author).WithIsInline(true))
                     .AddField(efb => efb.WithName(Format.Bold("Library")).WithValue(stats.Library).WithIsInline(true))

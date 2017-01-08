@@ -125,7 +125,7 @@ namespace NadekoBot.Modules.Help
         public async Task Hgit()
         {
             var helpstr = new StringBuilder();
-            helpstr.AppendLine("You can support the project on patreon: <https://patreon.com/nadekobot> or paypal: <https://www.paypal.me/Kwoth>\n");
+            //helpstr.AppendLine("You can support the project on patreon: <https://patreon.com/nadekobot> or paypal: <https://www.paypal.me/Kwoth>\n");
             helpstr.AppendLine("##Table Of Contents");
             helpstr.AppendLine(string.Join("\n", NadekoBot.CommandService.Modules.Where(m => m.GetTopLevelModule().Name.ToLowerInvariant() != "help")
                 .Select(m => m.GetTopLevelModule().Name)
