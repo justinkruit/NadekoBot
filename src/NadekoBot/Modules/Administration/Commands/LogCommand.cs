@@ -23,14 +23,17 @@ namespace NadekoBot.Modules.Administration
         [Group]
         public class LogCommands : ModuleBase
         {
-            private static ShardedDiscordClient _client { get; }
+            private const string clockEmojiUrl = "https://cdn.discordapp.com/attachments/155726317222887425/258309524966866945/clock.png";
+
+            private static DiscordShardedClient _client { get; }
             private static Logger _log { get; }
 
             private static string prettyCurrentTime => $"【{DateTime.Now:HH:mm:ss}】";
+            private static string currentTime => $"{DateTime.Now:HH:mm:ss}";
 
             public static ConcurrentDictionary<ulong, LogSetting> GuildLogSettings { get; }
 
-            private static ConcurrentDictionary<ITextChannel, List<string>> UserPresenceUpdates { get; } = new ConcurrentDictionary<ITextChannel, List<string>>();
+            private static ConcurrentDictionary<ITextChannel, List<string>> PresenceUpdates { get; } = new ConcurrentDictionary<ITextChannel, List<string>>();
             private static Timer timerReference { get; }
             private IGoogleApiService _google { get; }
 
@@ -50,20 +53,20 @@ namespace NadekoBot.Modules.Administration
                 {
                     try
                     {
-                        var keys = UserPresenceUpdates.Keys.ToList();
+                        var keys = PresenceUpdates.Keys.ToList();
 
                         await Task.WhenAll(keys.Select(async key =>
                         {
                             List<string> messages;
-                            if (UserPresenceUpdates.TryRemove(key, out messages))
-                                try { await key.SendMessageAsync(string.Join(Environment.NewLine, messages)); } catch { }
+                            if (PresenceUpdates.TryRemove(key, out messages))
+                                try { await key.SendConfirmAsync("Presence Updates", string.Join(Environment.NewLine, messages)); } catch { }
                         }));
                     }
                     catch (Exception ex)
                     {
                         _log.Warn(ex);
                     }
-                }, null, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+                }, null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
 
                 sw.Stop();
                 _log.Debug($"Loaded in {sw.Elapsed.TotalSeconds:F2}s");
@@ -78,7 +81,7 @@ namespace NadekoBot.Modules.Administration
                 _client.UserPresenceUpdated += _client_UserPresenceUpdated;
                 _client.UserVoiceStateUpdated += _client_UserVoiceStateUpdated;
                 _client.UserVoiceStateUpdated += _client_UserVoiceStateUpdated_TTS;
-                _client.GuildUserUpdated += _client_GuildUserUpdated;
+                _client.GuildMemberUpdated += _client_GuildUserUpdated;
 #if !GLOBAL_NADEKO
                 _client.UserUpdated += _client_UserUpdated;
 #endif
@@ -91,39 +94,75 @@ namespace NadekoBot.Modules.Administration
                 MuteCommands.UserUnmuted += MuteCommands_UserUnmuted;
             }
 
-            private static async void _client_UserUpdated(SocketUser before, SocketUser after)
+            private static async Task _client_UserUpdated(SocketUser before, SocketUser uAfter)
             {
                 try
                 {
-                    var str = "";
-                    if (before.Username != after.Username)
-                        str = $"👤__**{before.Username}#{before.Discriminator}**__ **| Name Changed |** 🆔 `{before.Id}`\n\t\t`New:` **{after.ToString()}**";
-                    else if (before.AvatarUrl != after.AvatarUrl)
-                        str = $"👤__**{before.Username}#{before.Discriminator}**__ **| Avatar Changed |** 🆔 `{before.Id}`\n\t🖼 {await NadekoBot.Google.ShortenUrl(before.AvatarUrl)} `=>` {await NadekoBot.Google.ShortenUrl(after.AvatarUrl)}";
+                    var after = uAfter as SocketGuildUser;
 
-                    if (string.IsNullOrWhiteSpace(str))
+                    if (after == null)
                         return;
 
-                    var guildsMemberOf = NadekoBot.Client.GetGuilds().Where(g => g.Users.Select(u => u.Id).Contains(before.Id)).ToList();
-                    foreach (var g in guildsMemberOf)
+                    var g = after.Guild;
+
+                    LogSetting logSetting;
+                    if (!GuildLogSettings.TryGetValue(g.Id, out logSetting)
+                        || (logSetting.UserUpdatedId == null))
+                        return;
+
+                    ITextChannel logChannel;
+                    if ((logChannel = await TryGetLogChannel(g, logSetting, LogType.UserUpdated)) == null)
+                        return;
+
+                    var embed = new EmbedBuilder();
+
+
+                    if (before.Username != after.Username)
                     {
-                        LogSetting logSetting;
-                        if (!GuildLogSettings.TryGetValue(g.Id, out logSetting)
-                            || (logSetting.UserUpdatedId == null))
-                            return;
-
-                        ITextChannel logChannel;
-                        if ((logChannel = await TryGetLogChannel(g, logSetting, LogType.UserUpdated)) == null)
-                            return;
-
-                        try { await logChannel.SendMessageAsync(str).ConfigureAwait(false); } catch { }
+                        embed.WithTitle("👥 Username Changed")
+                            .WithDescription($"{before.Username}#{before.Discriminator} | {before.Id}")
+                            .AddField(fb => fb.WithName("Old Name").WithValue($"{before.Username}").WithIsInline(true))
+                            .AddField(fb => fb.WithName("New Name").WithValue($"{after.Username}").WithIsInline(true))
+                            .WithFooter(fb => fb.WithText(currentTime))
+                            .WithOkColor();
                     }
+                    else if (before.AvatarUrl != after.AvatarUrl)
+                    {
+                        embed.WithTitle("👥 Avatar Changed")
+                            .WithDescription($"{before.Username}#{before.Discriminator} | {before.Id}")
+                            .WithTitle($"{before.Username}#{before.Discriminator} | {before.Id}")
+                            .WithThumbnailUrl(before.AvatarUrl)
+                            .WithImageUrl(after.AvatarUrl)
+                            .WithFooter(fb => fb.WithText(currentTime))
+                            .WithOkColor();
+                    }
+                    else
+                    {
+                        return;
+                    }
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
+
+                    //var guildsMemberOf = NadekoBot.Client.GetGuilds().Where(g => g.Users.Select(u => u.Id).Contains(before.Id)).ToList();
+                    //foreach (var g in guildsMemberOf)
+                    //{
+                    //    LogSetting logSetting;
+                    //    if (!GuildLogSettings.TryGetValue(g.Id, out logSetting)
+                    //        || (logSetting.UserUpdatedId == null))
+                    //        return;
+
+                    //    ITextChannel logChannel;
+                    //    if ((logChannel = await TryGetLogChannel(g, logSetting, LogType.UserUpdated)) == null)
+                    //        return;
+
+                    //    try { await logChannel.SendMessageAsync(str).ConfigureAwait(false); } catch { }
+                    //}
                 }
                 catch
                 { }
             }
 
-            private static async void _client_UserVoiceStateUpdated_TTS(SocketUser iusr, SocketVoiceState before, SocketVoiceState after)
+            private static async Task _client_UserVoiceStateUpdated_TTS(SocketUser iusr, SocketVoiceState before, SocketVoiceState after)
             {
                 try
                 {
@@ -146,7 +185,7 @@ namespace NadekoBot.Modules.Administration
                     if ((logChannel = await TryGetLogChannel(usr.Guild, logSetting, LogType.VoicePresenceTTS)) == null)
                         return;
 
-                    string str = null;
+                    var str = "";
                     if (beforeVch?.Guild == afterVch?.Guild)
                     {
                         str = $"{usr.Username} moved from {beforeVch.Name} to {afterVch.Name}";
@@ -190,9 +229,15 @@ namespace NadekoBot.Modules.Administration
                             mutes = "text and voice chat";
                             break;
                     }
-                    await logChannel.SendMessageAsync($"‼️🕕`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__🔇 **| User muted from the {mutes}. |** 🆔 `{usr.Id}`").ConfigureAwait(false);
+
+                    var embed = new EmbedBuilder().WithAuthor(eab => eab.WithName("🔇 User Muted from " + mutes))
+                            .WithTitle($"{usr.Username}#{usr.Discriminator} | {usr.Id}")
+                            .WithFooter(fb => fb.WithText(currentTime))
+                            .WithOkColor();
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
             private static async void MuteCommands_UserUnmuted(IGuildUser usr, MuteCommands.MuteType muteType)
@@ -221,9 +266,15 @@ namespace NadekoBot.Modules.Administration
                             mutes = "text and voice chat";
                             break;
                     }
-                    await logChannel.SendMessageAsync($"‼️🕕`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__🔊 **| User unmuted from the {mutes}. |** 🆔 `{usr.Id}`").ConfigureAwait(false);
+
+                    var embed = new EmbedBuilder().WithAuthor(eab => eab.WithName("🔊 User Unmuted from " + mutes))
+                            .WithTitle($"{usr.Username}#{usr.Discriminator} | {usr.Id}")
+                            .WithFooter(fb => fb.WithText($"{currentTime}"))
+                            .WithOkColor();
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
             public static async Task TriggeredAntiProtection(IGuildUser[] users, PunishmentAction action, ProtectionType protection)
@@ -245,25 +296,28 @@ namespace NadekoBot.Modules.Administration
                     if (action == PunishmentAction.Mute)
                     {
                         punishment = "🔇 MUTED";
-                        //punishment = "MUTED";
                     }
                     else if (action == PunishmentAction.Kick)
                     {
                         punishment = "☣ SOFT-BANNED (KICKED)";
-                        //punishment = "KICKED";
                     }
                     else if (action == PunishmentAction.Ban)
                     {
                         punishment = "⛔️ BANNED";
-                        //punishment = "BANNED";
                     }
-                    await logChannel.SendMessageAsync(String.Join("\n", users.Select(user => $"‼️ {Format.Bold(user.ToString())} got **{punishment}** due to __**{protection}**__ protection on **{user.Guild.Name}** server.")))
-                                    .ConfigureAwait(false);
+
+                    var embed = new EmbedBuilder().WithAuthor(eab => eab.WithName($"🛡 Anti-{protection}"))
+                            .WithTitle($"Users " + punishment)
+                            .WithDescription(String.Join("\n", users.Select(u => u.ToString())))
+                            .WithFooter(fb => fb.WithText($"{currentTime}"))
+                            .WithOkColor();
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
-            private static async void _client_GuildUserUpdated(SocketGuildUser before, SocketGuildUser after)
+            private static async Task _client_GuildUserUpdated(SocketGuildUser before, SocketGuildUser after)
             {
                 try
                 {
@@ -275,30 +329,38 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(before.Guild, logSetting, LogType.UserUpdated)) == null)
                         return;
-                    var str = "";
+                    var embed = new EmbedBuilder().WithOkColor().WithFooter(efb => efb.WithText(currentTime))
+                        .WithTitle($"{before.Username}#{before.Discriminator} | {before.Id}");
                     if (before.Nickname != after.Nickname)
-                        str = $"👤__**{before.Username}#{before.Discriminator}**__ **| Nickname Changed |** 🆔 `{before.Id}`\n\t\t`Old:` **{before.Nickname}**\n\t\t`New:` **{after.Nickname}**";
+                    {
+                        embed.WithAuthor(eab => eab.WithName("👥 Nickname Changed"))
+
+                            .AddField(efb => efb.WithName("Old Nickname").WithValue($"{before.Nickname}#{before.Discriminator}"))
+                            .AddField(efb => efb.WithName("New Nickname").WithValue($"{after.Nickname}#{after.Discriminator}"));
+                    }
                     else if (!before.RoleIds.SequenceEqual(after.RoleIds))
                     {
                         if (before.RoleIds.Count < after.RoleIds.Count)
                         {
-                            var diffRoles = after.RoleIds.Where(r => !before.RoleIds.Contains(r)).Select(r => "**" + before.Guild.GetRole(r).Name + "**");
-                            str = $"👤__**{before.ToString()}**__ **| User's Role Added |** 🆔 `{before.Id}`\n\t✅ {string.Join(", ", diffRoles).SanitizeMentions()}\n\t\t⚔ **`{string.Join(", ", after.GetRoles().Select(r => r.Name)).SanitizeMentions()}`** ⚔";
+                            var diffRoles = after.RoleIds.Where(r => !before.RoleIds.Contains(r)).Select(r => before.Guild.GetRole(r).Name);
+                            embed.WithAuthor(eab => eab.WithName("⚔ User's Role Added"))
+                                .WithDescription(string.Join(", ", diffRoles).SanitizeMentions());
                         }
                         else if (before.RoleIds.Count > after.RoleIds.Count)
                         {
-                            var diffRoles = before.RoleIds.Where(r => !after.RoleIds.Contains(r)).Select(r => "**" + before.Guild.GetRole(r).Name + "**");
-                            str = $"👤__**{before.ToString()}**__ **| User's Role Removed |** 🆔 `{before.Id}`\n\t🚮 {string.Join(", ", diffRoles).SanitizeMentions()}\n\t\t⚔ **`{string.Join(", ", after.GetRoles().Select(r => r.Name)).SanitizeMentions()}`** ⚔";
+                            var diffRoles = before.RoleIds.Where(r => !after.RoleIds.Contains(r)).Select(r => before.Guild.GetRole(r).Name);
+                            embed.WithAuthor(eab => eab.WithName("⚔ User's Role Removed"))
+                                .WithDescription(string.Join(", ", diffRoles).SanitizeMentions());
                         }
                     }
                     else
                         return;
-                    try { await logChannel.SendMessageAsync("🕔`{prettyCurrentTime}` " + str).ConfigureAwait(false); } catch (Exception ex) { _log.Warn(ex); }
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
-            private static async void _client_ChannelUpdated(IChannel cbefore, IChannel cafter)
+            private static async Task _client_ChannelUpdated(IChannel cbefore, IChannel cafter)
             {
                 try
                 {
@@ -316,19 +378,34 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(before.Guild, logSetting, LogType.ChannelUpdated)) == null)
                         return;
+
+                    var embed = new EmbedBuilder().WithOkColor().WithFooter(efb => efb.WithText(currentTime));
+
+                    var beforeTextChannel = cbefore as ITextChannel;
+                    var afterTextChannel = cafter as ITextChannel;
+
                     if (before.Name != after.Name)
-                        await logChannel.SendMessageAsync($@"🕓`{prettyCurrentTime}`ℹ️ **| Channel Name Changed |** #⃣ `{after.Name} ({after.Id})`
-    `Old:` {before.Name}
-    **`New:`** {after.Name}").ConfigureAwait(false);
-                    else if ((before as ITextChannel).Topic != (after as ITextChannel).Topic)
-                        await logChannel.SendMessageAsync($@"🕘`{prettyCurrentTime}`ℹ️ **| Channel Topic Changed |** #⃣ `{after.Name} ({after.Id})`
-    `Old:` {((ITextChannel)before).Topic}
-    **`New:`** {((ITextChannel)after).Topic}").ConfigureAwait(false);
+                    {
+                        embed.WithTitle("ℹ️ Channel Name Changed")
+                            .WithDescription($"{after} | {after.Id}")
+                            .AddField(efb => efb.WithName("Old Name").WithValue(before.Name));
+                    }
+                    else if (beforeTextChannel?.Topic != afterTextChannel?.Topic)
+                    {
+                        embed.WithTitle("ℹ️ Channel Topic Changed")
+                            .WithDescription($"{after} | {after.Id}")
+                            .AddField(efb => efb.WithName("Old Topic").WithValue(beforeTextChannel.Topic))
+                            .AddField(efb => efb.WithName("New Topic").WithValue(afterTextChannel.Topic));
+                    }
+                    else
+                        return;
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
-            private static async void _client_ChannelDestroyed(IChannel ich)
+            private static async Task _client_ChannelDestroyed(IChannel ich)
             {
                 try
                 {
@@ -346,12 +423,16 @@ namespace NadekoBot.Modules.Administration
                     if ((logChannel = await TryGetLogChannel(ch.Guild, logSetting, LogType.ChannelDestroyed)) == null)
                         return;
 
-                    await logChannel.SendMessageAsync($"🕕`{prettyCurrentTime}`🗑 **| {(ch is IVoiceChannel ? "Voice" : "Text")} Channel Deleted #⃣ {ch.Name}** `({ch.Id})`").ConfigureAwait(false);
+                    await logChannel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("🆕 " + (ch is IVoiceChannel ? "Voice" : "Text") + " Channel Destroyed")
+                        .WithDescription($"{ch.Name} | {ch.Id}")
+                        .WithFooter(efb => efb.WithText(currentTime))).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
-            private static async void _client_ChannelCreated(IChannel ich)
+            private static async Task _client_ChannelCreated(IChannel ich)
             {
                 try
                 {
@@ -368,12 +449,16 @@ namespace NadekoBot.Modules.Administration
                     if ((logChannel = await TryGetLogChannel(ch.Guild, logSetting, LogType.ChannelCreated)) == null)
                         return;
 
-                    await logChannel.SendMessageAsync($"🕓`{prettyCurrentTime}`🆕 **| {(ch is IVoiceChannel ? "Voice" : "Text")} Channel Created: #⃣ {ch.Name}** `({ch.Id})`").ConfigureAwait(false);
+                    await logChannel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("🆕 " + (ch is IVoiceChannel ? "Voice" : "Text") + " Channel Created")
+                        .WithDescription($"{ch.Name} | {ch.Id}")
+                        .WithFooter(efb => efb.WithText(currentTime))).ConfigureAwait(false);
                 }
                 catch (Exception ex) { _log.Warn(ex); }
             }
 
-            private static async void _client_UserVoiceStateUpdated(SocketUser iusr, SocketVoiceState before, SocketVoiceState after)
+            private static async Task _client_UserVoiceStateUpdated(SocketUser iusr, SocketVoiceState before, SocketVoiceState after)
             {
                 try
                 {
@@ -410,19 +495,16 @@ namespace NadekoBot.Modules.Administration
                         str = $"🎙`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__ has left **{beforeVch.Name}** voice channel.";
                     }
                     if (str != null)
-                        UserPresenceUpdates.AddOrUpdate(logChannel, new List<string>() { str }, (id, list) => { list.Add(str); return list; });
+                        PresenceUpdates.AddOrUpdate(logChannel, new List<string>() { str }, (id, list) => { list.Add(str); return list; });
                 }
-                catch (Exception ex)
-                {
-                    _log.Warn(ex);
-                }
+                catch { }
             }
 
-            private static async void _client_UserPresenceUpdated(Optional<SocketGuild> optGuild, SocketUser usr, SocketPresence before, SocketPresence after)
+            private static async Task _client_UserPresenceUpdated(Optional<SocketGuild> optGuild, SocketUser usr, SocketPresence before, SocketPresence after)
             {
                 try
                 {
-                    var guild = optGuild.IsSpecified ? optGuild.Value : null;
+                    var guild = optGuild.GetValueOrDefault() ?? (usr as SocketGuildUser)?.Guild;
 
                     if (guild == null)
                         return;
@@ -436,18 +518,23 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(guild, logSetting, LogType.UserPresence)) == null)
                         return;
-                    string str;
+                    string str = "";
                     if (before.Status != after.Status)
-                        str = $"🔵`{prettyCurrentTime}`👤__**{usr.Username}**__ is now **{after.Status}**.";
-                    else
-                        str = $"👾`{prettyCurrentTime}`👤__**{usr.Username}**__ is now playing **{after.Game}**.";
+                        str = $"🎭`{prettyCurrentTime}`👤__**{usr.Username}**__ is now **{after.Status}**.";
 
-                    UserPresenceUpdates.AddOrUpdate(logChannel, new List<string>() { str }, (id, list) => { list.Add(str); return list; });
+                    //if (before.Game?.Name != after.Game?.Name)
+                    //{
+                    //    if (str != "")
+                    //        str += "\n";
+                    //    str += $"👾`{prettyCurrentTime}`👤__**{usr.Username}**__ is now playing **{after.Game?.Name}**.";
+                    //}
+
+                    PresenceUpdates.AddOrUpdate(logChannel, new List<string>() { str }, (id, list) => { list.Add(str); return list; });
                 }
                 catch { }
             }
 
-            private static async void _client_UserLeft(IGuildUser usr)
+            private static async Task _client_UserLeft(IGuildUser usr)
             {
                 try
                 {
@@ -459,12 +546,19 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(usr.Guild, logSetting, LogType.UserLeft)) == null)
                         return;
-                    await logChannel.SendMessageAsync($"❗️🕛`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__❌ **| USER LEFT |** 🆔 `{usr.Id}`").ConfigureAwait(false);
+
+                    await logChannel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("❌ User Left")
+                        .WithThumbnailUrl(usr.AvatarUrl)
+                        .WithDescription(usr.ToString())
+                        .AddField(efb => efb.WithName("Id").WithValue(usr.Id.ToString()))
+                        .WithFooter(efb => efb.WithText(currentTime))).ConfigureAwait(false);
                 }
                 catch { }
             }
 
-            private static async void _client_UserJoined(IGuildUser usr)
+            private static async Task _client_UserJoined(IGuildUser usr)
             {
                 try
                 {
@@ -477,12 +571,18 @@ namespace NadekoBot.Modules.Administration
                     if ((logChannel = await TryGetLogChannel(usr.Guild, logSetting, LogType.UserJoined)) == null)
                         return;
 
-                    await logChannel.SendMessageAsync($"❕🕓`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__✅ **| USER JOINED |** 🆔 `{usr.Id}`").ConfigureAwait(false);
+                    await logChannel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("✅ User Joined")
+                        .WithThumbnailUrl(usr.AvatarUrl)
+                        .WithDescription($"{usr}")
+                        .AddField(efb => efb.WithName("Id").WithValue(usr.Id.ToString()))
+                        .WithFooter(efb => efb.WithText(currentTime))).ConfigureAwait(false);
                 }
                 catch (Exception ex) { _log.Warn(ex); }
             }
 
-            private static async void _client_UserUnbanned(IUser usr, IGuild guild)
+            private static async Task _client_UserUnbanned(IUser usr, IGuild guild)
             {
                 try
                 {
@@ -495,12 +595,18 @@ namespace NadekoBot.Modules.Administration
                     if ((logChannel = await TryGetLogChannel(guild, logSetting, LogType.UserUnbanned)) == null)
                         return;
 
-                    await logChannel.SendMessageAsync($"❕🕘`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__♻️ **| USER UN-BANNED |** 🆔 `{usr.Id}`").ConfigureAwait(false);
+                    await logChannel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("♻️ User Unbanned")
+                        .WithThumbnailUrl(usr.AvatarUrl)
+                        .WithDescription(usr.ToString())
+                        .AddField(efb => efb.WithName("Id").WithValue(usr.Id.ToString()))
+                        .WithFooter(efb => efb.WithText(currentTime))).ConfigureAwait(false);
                 }
                 catch (Exception ex) { _log.Warn(ex); }
             }
 
-            private static async void _client_UserBanned(IUser usr, IGuild guild)
+            private static async Task _client_UserBanned(IUser usr, IGuild guild)
             {
                 try
                 {
@@ -512,12 +618,18 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(guild, logSetting, LogType.UserBanned)) == null)
                         return;
-                    await logChannel.SendMessageAsync($"‼️🕕`{prettyCurrentTime}`👤__**{usr.Username}#{usr.Discriminator}**__🚫 **| USER BANNED |** 🆔 `{usr.Id}`").ConfigureAwait(false);
+                    await logChannel.EmbedAsync(new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle("🚫 User Banned")
+                        .WithThumbnailUrl(usr.AvatarUrl)
+                        .WithDescription(usr.ToString())
+                        .AddField(efb => efb.WithName("Id").WithValue(usr.Id.ToString()))
+                        .WithFooter(efb => efb.WithText(currentTime))).ConfigureAwait(false);
                 }
                 catch (Exception ex) { _log.Warn(ex); }
             }
 
-            private static async void _client_MessageDeleted(ulong arg1, Optional<SocketMessage> imsg)
+            private static async Task _client_MessageDeleted(ulong arg1, Optional<SocketMessage> imsg)
             {
 
                 try
@@ -539,16 +651,22 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(channel.Guild, logSetting, LogType.MessageDeleted)) == null || logChannel.Id == msg.Id)
                         return;
-                    var str = $@"🕔`{prettyCurrentTime}`👤__**{msg.Author.Username}#{msg.Author.Discriminator}**__ **| Deleted Message |** 🆔 `{msg.Author.Id}` #⃣ `{channel.Name}`
-🗑 {msg.Resolve(userHandling: TagHandling.FullName)}";
+                    var embed = new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle($"🗑 Message Deleted in {((ITextChannel)msg.Channel).Mention}")
+                        .WithDescription($"{msg.Author}")
+                        .AddField(efb => efb.WithName("Content").WithValue(msg.Resolve(userHandling: TagHandling.FullName)).WithIsInline(false))
+                        .AddField(efb => efb.WithName("Id").WithValue(msg.Id.ToString()).WithIsInline(false))
+                        .WithFooter(efb => efb.WithText(currentTime));
                     if (msg.Attachments.Any())
-                        str += $"{Environment.NewLine}📎 {string.Join(", ", msg.Attachments.Select(a => a.ProxyUrl))}";
-                    await logChannel.SendMessageAsync(str.SanitizeMentions()).ConfigureAwait(false);
+                        embed.AddField(efb => efb.WithName("Attachments").WithValue(string.Join(", ", msg.Attachments.Select(a => a.ProxyUrl))).WithIsInline(false));
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
-            private static async void _client_MessageUpdated(Optional<SocketMessage> optmsg, SocketMessage imsg2)
+            private static async Task _client_MessageUpdated(Optional<SocketMessage> optmsg, SocketMessage imsg2)
             {
                 try
                 {
@@ -576,11 +694,19 @@ namespace NadekoBot.Modules.Administration
                     ITextChannel logChannel;
                     if ((logChannel = await TryGetLogChannel(channel.Guild, logSetting, LogType.MessageUpdated)) == null || logChannel.Id == after.Channel.Id)
                         return;
-                    await logChannel.SendMessageAsync($@"🕔`{prettyCurrentTime}`👤__**{before.Author.Username}#{before.Author.Discriminator}**__ **| 📝 Edited Message |** 🆔 `{before.Author.Id}` #⃣ `{channel.Name}`
-        `Old:` {before.Resolve(userHandling: TagHandling.FullName).SanitizeMentions()}
-        **`New:`** {after.Resolve(userHandling: TagHandling.FullName).SanitizeMentions()}").ConfigureAwait(false);
+
+                    var embed = new EmbedBuilder()
+                        .WithOkColor()
+                        .WithTitle($"📝 Message Updated in {((ITextChannel)after.Channel).Mention}")
+                        .WithDescription(after.Author.ToString())
+                        .AddField(efb => efb.WithName("Old Message").WithValue(before.Resolve(userHandling: TagHandling.FullName)).WithIsInline(false))
+                        .AddField(efb => efb.WithName("New Message").WithValue(after.Resolve(userHandling: TagHandling.FullName)).WithIsInline(false))
+                        .AddField(efb => efb.WithName("Id").WithValue(after.Id.ToString()).WithIsInline(false))
+                        .WithFooter(efb => efb.WithText(currentTime));
+
+                    await logChannel.EmbedAsync(embed).ConfigureAwait(false);
                 }
-                catch (Exception ex) { _log.Warn(ex); }
+                catch { }
             }
 
             public enum LogType
@@ -763,6 +889,7 @@ namespace NadekoBot.Modules.Administration
                     logSetting.ChannelUpdatedId =
                     logSetting.LogUserPresenceId =
                     logSetting.LogVoicePresenceId =
+                    logSetting.UserMutedId =
                     logSetting.LogVoicePresenceTTSId = (action.Value ? channel.Id : (ulong?)null);
 
                     await uow.CompleteAsync().ConfigureAwait(false);

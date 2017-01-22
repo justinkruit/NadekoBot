@@ -13,6 +13,8 @@ using System.Net.Http;
 using System.Collections.Concurrent;
 using System.Threading;
 using ImageSharp;
+using System.Collections.Generic;
+using Newtonsoft.Json;
 
 namespace NadekoBot.Modules.Utility
 {
@@ -82,7 +84,7 @@ namespace NadekoBot.Modules.Utility
                 old.Change(Timeout.Infinite, Timeout.Infinite);
                 return t;
             });
-            
+
             await channel.SendFileAsync(images, "magicalgirl.jpg", $"Rotating **{role.Name}** role's color.").ConfigureAwait(false);
         }
 
@@ -240,15 +242,16 @@ namespace NadekoBot.Modules.Utility
 
         [NadekoCommand, Usage, Description, Aliases]
         [RequireContext(ContextType.Guild)]
-        public async Task ChannelTopic()
+        public async Task ChannelTopic([Remainder]ITextChannel channel = null)
         {
-            var channel = (ITextChannel)Context.Channel;
+            if (channel == null)
+                channel = (ITextChannel)Context.Channel;
 
             var topic = channel.Topic;
             if (string.IsNullOrWhiteSpace(topic))
-                await channel.SendErrorAsync("No topic set.");
+                await Context.Channel.SendErrorAsync("No topic set.").ConfigureAwait(false);
             else
-                await channel.SendConfirmAsync("Channel topic", topic);
+                await Context.Channel.SendConfirmAsync("Channel topic", topic).ConfigureAwait(false);
         }
 
         [NadekoCommand, Usage, Description, Aliases]
@@ -274,27 +277,25 @@ namespace NadekoBot.Modules.Utility
                                           .WithIconUrl("http://i.imgur.com/7Vv6VLa.png"))
                     .AddField(efb => efb.WithName(Format.Bold("Author")).WithValue(stats.Author).WithIsInline(true))
                     .AddField(efb => efb.WithName(Format.Bold("Library")).WithValue(stats.Library).WithIsInline(true))
-                    .AddField(efb => efb.WithName(Format.Bold("Bot ID")).WithValue(NadekoBot.Client.CurrentUser().Id.ToString()).WithIsInline(true))
+                    .AddField(efb => efb.WithName(Format.Bold("Bot ID")).WithValue(NadekoBot.Client.CurrentUser.Id.ToString()).WithIsInline(true))
                     .AddField(efb => efb.WithName(Format.Bold("Commands Ran")).WithValue(stats.CommandsRan.ToString()).WithIsInline(true))
                     .AddField(efb => efb.WithName(Format.Bold("Messages")).WithValue($"{stats.MessageCounter} ({stats.MessagesPerSecond:F2}/sec)").WithIsInline(true))
                     .AddField(efb => efb.WithName(Format.Bold("Memory")).WithValue($"{stats.Heap} MB").WithIsInline(true))
-                    .AddField(efb => efb.WithName(Format.Bold("Owner ID(s)")).WithValue(stats.OwnerIds).WithIsInline(true))
+                    .AddField(efb => efb.WithName(Format.Bold("Owner ID(s)")).WithValue(string.Join("\n", NadekoBot.Credentials.OwnerIds)).WithIsInline(true))
                     .AddField(efb => efb.WithName(Format.Bold("Uptime")).WithValue(stats.GetUptimeString("\n")).WithIsInline(true))
-                    .AddField(efb => efb.WithName(Format.Bold("Presence")).WithValue($"{NadekoBot.Client.GetGuildsCount()} Servers\n{stats.TextChannels} Text Channels\n{stats.VoiceChannels} Voice Channels").WithIsInline(true))
+                    .AddField(efb => efb.WithName(Format.Bold("Presence")).WithValue($"{NadekoBot.Client.GetGuildCount()} Servers\n{stats.TextChannels} Text Channels\n{stats.VoiceChannels} Voice Channels").WithIsInline(true))
 #if !GLOBAL_NADEKO
                     .WithFooter(efb => efb.WithText($"Playing {Music.Music.MusicPlayers.Where(mp => mp.Value.CurrentSong != null).Count()} songs, {Music.Music.MusicPlayers.Sum(mp => mp.Value.Playlist.Count)} queued."))
 #endif
                     );
         }
 
-        private Regex emojiFinder { get; } = new Regex(@"<:(?<name>.+?):(?<id>\d*)>", RegexOptions.Compiled);
         [NadekoCommand, Usage, Description, Aliases]
         public async Task Showemojis([Remainder] string emojis)
         {
-            var matches = emojiFinder.Matches(emojis);
+            var tags = Context.Message.Tags.Where(t => t.Type == TagType.Emoji).Select(t => (Emoji)t.Value);
 
-            var result = string.Join("\n", matches.Cast<Match>()
-                                                  .Select(m => $"**Name:** {m.Groups["name"]} **Link:** http://discordapp.com/api/emojis/{m.Groups["id"]}.png"));
+            var result = string.Join("\n", tags.Select(m => $"**Name:** {m} **Link:** {m.Url}"));
 
             if (string.IsNullOrWhiteSpace(result))
                 await Context.Channel.SendErrorAsync("No special emojis found.");
@@ -324,6 +325,23 @@ namespace NadekoBot.Modules.Utility
                                                                            .WithValue($"```css\nID: {g.Id}\nMembers: {g.Users.Count}\nOwnerID: {g.OwnerId} ```")
                                                                            .WithIsInline(false))))
                          .ConfigureAwait(false);
+        }
+
+
+        [NadekoCommand, Usage, Description, Aliases]
+        [RequireContext(ContextType.Guild)]
+        [OwnerOnly]
+        public async Task SaveChat(int cnt)
+        {
+            var sb = new StringBuilder();
+            var msgs = new List<IMessage>(cnt);
+            await Context.Channel.GetMessagesAsync(cnt).ForEachAsync(dled => msgs.AddRange(dled)).ConfigureAwait(false);
+
+            var title = $"Chatlog-{Context.Guild.Name}/#{Context.Channel.Name}-{DateTime.Now}.txt";
+            var grouping = msgs.GroupBy(x => $"{x.CreatedAt.Date:dd.MM.yyyy}")
+                .Select(g => new { date = g.Key, messages = g.OrderBy(x => x.CreatedAt).Select(s => $"【{s.Timestamp:HH:mm:ss}】{s.Author}:" + s.ToString()) });
+            await Context.User.SendFileAsync(
+                await JsonConvert.SerializeObject(grouping, Formatting.Indented).ToStream().ConfigureAwait(false), title, title).ConfigureAwait(false);
         }
     }
 }
