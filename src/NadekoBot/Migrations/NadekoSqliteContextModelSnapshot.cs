@@ -299,6 +299,26 @@ namespace NadekoBot.Migrations
                     b.ToTable("CustomReactions");
                 });
 
+            modelBuilder.Entity("NadekoBot.Services.Database.Models.DiscordUser", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<string>("AvatarId");
+
+                    b.Property<string>("Discriminator");
+
+                    b.Property<ulong>("UserId");
+
+                    b.Property<string>("Username");
+
+                    b.HasKey("Id");
+
+                    b.HasAlternateKey("UserId");
+
+                    b.ToTable("DiscordUser");
+                });
+
             modelBuilder.Entity("NadekoBot.Services.Database.Models.Donator", b =>
                 {
                     b.Property<int>("Id")
@@ -817,6 +837,55 @@ namespace NadekoBot.Migrations
                     b.ToTable("PokeGame");
                 });
 
+            modelBuilder.Entity("NadekoBot.Services.Database.Models.WaifuInfo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<int?>("AffinityId");
+
+                    b.Property<int?>("ClaimerId");
+
+                    b.Property<int>("Price");
+
+                    b.Property<int>("WaifuId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AffinityId");
+
+                    b.HasIndex("ClaimerId");
+
+                    b.HasIndex("WaifuId")
+                        .IsUnique();
+
+                    b.ToTable("WaifuInfo");
+                });
+
+            modelBuilder.Entity("NadekoBot.Services.Database.Models.WaifuUpdate", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<int?>("NewId");
+
+                    b.Property<int?>("OldId");
+
+                    b.Property<int>("UpdateType");
+
+                    b.Property<int>("UserId");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NewId");
+
+                    b.HasIndex("OldId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("WaifuUpdates");
+                });
+
             modelBuilder.Entity("NadekoBot.Services.Database.Models.AntiRaidSetting", b =>
                 {
                     b.HasOne("NadekoBot.Services.Database.Models.GuildConfig", "GuildConfig")
@@ -981,6 +1050,38 @@ namespace NadekoBot.Migrations
                     b.HasOne("NadekoBot.Services.Database.Models.BotConfig")
                         .WithMany("RaceAnimals")
                         .HasForeignKey("BotConfigId");
+                });
+
+            modelBuilder.Entity("NadekoBot.Services.Database.Models.WaifuInfo", b =>
+                {
+                    b.HasOne("NadekoBot.Services.Database.Models.DiscordUser", "Affinity")
+                        .WithMany()
+                        .HasForeignKey("AffinityId");
+
+                    b.HasOne("NadekoBot.Services.Database.Models.DiscordUser", "Claimer")
+                        .WithMany()
+                        .HasForeignKey("ClaimerId");
+
+                    b.HasOne("NadekoBot.Services.Database.Models.DiscordUser", "Waifu")
+                        .WithOne()
+                        .HasForeignKey("NadekoBot.Services.Database.Models.WaifuInfo", "WaifuId")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("NadekoBot.Services.Database.Models.WaifuUpdate", b =>
+                {
+                    b.HasOne("NadekoBot.Services.Database.Models.DiscordUser", "New")
+                        .WithMany()
+                        .HasForeignKey("NewId");
+
+                    b.HasOne("NadekoBot.Services.Database.Models.DiscordUser", "Old")
+                        .WithMany()
+                        .HasForeignKey("OldId");
+
+                    b.HasOne("NadekoBot.Services.Database.Models.DiscordUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade);
                 });
         }
     }

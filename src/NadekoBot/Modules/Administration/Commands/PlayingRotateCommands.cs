@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using NadekoBot.Attributes;
 using NadekoBot.Extensions;
 using NadekoBot.Services;
@@ -9,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NadekoBot.Modules.Administration
@@ -21,8 +23,13 @@ namespace NadekoBot.Modules.Administration
             private static Logger _log { get; }
             public static List<PlayingStatus> RotatingStatusMessages { get; }
             public static bool RotatingStatuses { get; private set; } = false;
+            private static Timer _t { get; }
 
-            //todo wtf is with this while(true) in constructor
+            private class TimerState
+            {
+                public int Index { get; set; } = 0;
+            }
+
             static PlayingRotateCommands()
             {
                 _log = LogManager.GetCurrentClassLogger();
@@ -30,46 +37,50 @@ namespace NadekoBot.Modules.Administration
                 RotatingStatusMessages = NadekoBot.BotConfig.RotatingStatusMessages;
                 RotatingStatuses = NadekoBot.BotConfig.RotatingStatuses;
 
-                var t = Task.Run(async () =>
-                {
-                    var index = 0;
-                    do
-                    {
-                        try
-                        {
-                            if (!RotatingStatuses)
-                                continue;
-                            else
-                            {
-                                if (index >= RotatingStatusMessages.Count)
-                                    index = 0;
 
-                                if (!RotatingStatusMessages.Any())
-                                    continue;
-                                var status = RotatingStatusMessages[index++].Status;
-                                if (string.IsNullOrWhiteSpace(status))
-                                    continue;
-                                PlayingPlaceholders.ForEach(e => status = status.Replace(e.Key, e.Value()));
-                                await NadekoBot.Client.SetGameAsync(status).ConfigureAwait(false);
+
+                _t = new Timer(async (objState) =>
+                {
+                    try
+                    {
+                        var state = (TimerState)objState;
+                        if (!RotatingStatuses)
+                            return;
+                        else
+                        {
+                            if (state.Index >= RotatingStatusMessages.Count)
+                                state.Index = 0;
+
+                            if (!RotatingStatusMessages.Any())
+                                return;
+                            var status = RotatingStatusMessages[state.Index++].Status;
+                            if (string.IsNullOrWhiteSpace(status))
+                                return;
+                            PlayingPlaceholders.ForEach(e => status = status.Replace(e.Key, e.Value()));
+                            var shards = NadekoBot.Client.Shards;
+                            for (int i = 0; i < shards.Count; i++)
+                            {
+                                ShardSpecificPlaceholders.ForEach(e => status = status.Replace(e.Key, e.Value(shards.ElementAt(i))));
+                                try { await shards.ElementAt(i).SetGameAsync(status).ConfigureAwait(false); }
+                                catch (Exception ex)
+                                {
+                                    _log.Warn(ex);
+                                }
                             }
                         }
-                        catch (Exception ex)
-                        {
-                            _log.Warn("Rotating playing status errored.\n" + ex);
-                        }
-                        finally
-                        {
-                            await Task.Delay(TimeSpan.FromMinutes(1));
-                        }
-                    } while (true);
-                });
+                    }
+                    catch (Exception ex)
+                    {
+                        _log.Warn("Rotating playing status errored.\n" + ex);
+                    }
+                }, new TimerState(), TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
             }
 
             public static Dictionary<string, Func<string>> PlayingPlaceholders { get; } =
                 new Dictionary<string, Func<string>> {
-                    {"%servers%", () => NadekoBot.Client.GetGuildCount().ToString()},
-                    {"%users%", () => NadekoBot.Client.GetGuilds().Sum(s => s.Users.Count).ToString()},
-                    {"%playing%", () => {
+                    { "%servers%", () => NadekoBot.Client.GetGuildCount().ToString()},
+                    { "%users%", () => NadekoBot.Client.GetGuilds().Sum(s => s.Users.Count).ToString()},
+                    { "%playing%", () => {
                             var cnt = Music.Music.MusicPlayers.Count(kvp => kvp.Value.CurrentSong != null);
                             if (cnt != 1) return cnt.ToString();
                             try {
@@ -81,7 +92,15 @@ namespace NadekoBot.Modules.Administration
                             }
                         }
                     },
-                    {"%queued%", () => Music.Music.MusicPlayers.Sum(kvp => kvp.Value.Playlist.Count).ToString()}
+                    { "%queued%", () => Music.Music.MusicPlayers.Sum(kvp => kvp.Value.Playlist.Count).ToString()},
+                    { "%time%", () => DateTime.Now.ToString("HH:mm " + TimeZoneInfo.Local.StandardName.GetInitials()) },
+                    { "%shardcount%", () => NadekoBot.Client.Shards.Count.ToString() },
+                };
+
+            public static Dictionary<string, Func<DiscordSocketClient, string>> ShardSpecificPlaceholders { get; } =
+                new Dictionary<string, Func<DiscordSocketClient, string>> {
+                    { "%shardid%", (client) => client.ShardId.ToString()},
+                    { "%shardguilds%", (client) => client.Guilds.Count.ToString()},
                 };
 
             [NadekoCommand, Usage, Description, Aliases]
